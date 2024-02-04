@@ -1,0 +1,20 @@
+name: Enhancement
+description: Document a new feature idea or other project enhancement
+labels: [enhancement, triage]
+assignees:
+  - jahvon
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Enhancement Summary
+      description: A clear and concise description of what the enhancement is. What is the desired outcome of this enhancement?
+    validations:
+      required: true
+  - type: textarea
+    id: ctx
+    attributes:
+      label: Additional context
+      description: Anything else you would like to add
+    validations:
+      required: false

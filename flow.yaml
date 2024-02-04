@@ -1,0 +1,6 @@
+displayName: Terminal UI Kit
+description: |
+    Source code for tuikit
+    GitHub Repo: github.com/jahvon/tuikit
+git:
+    enabled: false

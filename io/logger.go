@@ -39,22 +39,9 @@ func NewLogger(style styles.Theme, archiveDir string) *Logger {
 	logger.stdOutHandler = stdOutHandler
 
 	if archiveDir != "" {
-		if dir, err := os.Stat(archiveDir); os.IsNotExist(err) {
-			err := os.MkdirAll(archiveDir, 0755)
-			if err != nil {
-				panic(fmt.Errorf("failed to create archive directory: %w", err))
-			}
-		} else if !dir.IsDir() {
-			panic(fmt.Errorf("archive directory is not a directory"))
-		}
-		writer, err := os.Create(filepath.Clean(
-			fmt.Sprintf("%s/%s.log", archiveDir, time.Now().Format("2006-01-02-15-04-05")),
-		))
-		if err != nil {
-			panic(fmt.Errorf("failed to create archive log file: %w", err))
-		}
+		archiveFile := newArchiveLogFile(archiveDir)
 		archiveHandler := log.NewWithOptions(
-			writer,
+			archiveFile,
 			log.Options{
 				ReportTimestamp: true,
 				ReportCaller:    false,
@@ -62,7 +49,7 @@ func NewLogger(style styles.Theme, archiveDir string) *Logger {
 			},
 		)
 		applyStorageFormat(archiveHandler)
-		logger.archiveFile = writer
+		logger.archiveFile = archiveFile
 		logger.archiveHandler = archiveHandler
 		rotateArchive(logger)
 	}
@@ -81,6 +68,24 @@ func applyStorageFormat(handler *log.Logger) {
 	handler.SetFormatter(log.JSONFormatter)
 	handler.SetTimeFormat(time.RFC822)
 	handler.SetStyles(log.DefaultStyles())
+}
+
+func newArchiveLogFile(archiveDir string) *os.File {
+	if dir, err := os.Stat(archiveDir); os.IsNotExist(err) {
+		err := os.MkdirAll(archiveDir, 0755)
+		if err != nil {
+			panic(fmt.Errorf("failed to create archive directory: %w", err))
+		}
+	} else if !dir.IsDir() {
+		panic(fmt.Errorf("archive directory is not a directory"))
+	}
+	writer, err := os.Create(filepath.Clean(
+		fmt.Sprintf("%s/%s.log", archiveDir, time.Now().Format("2006-01-02-15-04-05")),
+	))
+	if err != nil {
+		panic(fmt.Errorf("failed to create archive log file: %w", err))
+	}
+	return writer
 }
 
 func rotateArchive(logger *Logger) {

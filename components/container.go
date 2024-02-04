@@ -92,7 +92,7 @@ func (a *ContainerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		msg.Width = int(math.Floor(float64(msg.Width) * 0.90))
 		a.width = msg.Width
-		msg.Height = msg.Height - heightPadding
+		msg.Height -= heightPadding
 		a.height = msg.Height
 
 		if !a.Ready() {

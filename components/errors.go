@@ -27,6 +27,7 @@ func (v *ErrorView) Init() tea.Cmd {
 }
 
 func (v *ErrorView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	//nolint:gocritic
 	switch msg.(type) {
 	case TickMsg:
 		return v, tea.Quit

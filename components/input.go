@@ -10,9 +10,8 @@ import (
 )
 
 type TextInput struct {
-	input     *textinput.Model
-	err       TeaModel
-	submitted chan bool
+	input *textinput.Model
+	err   TeaModel
 
 	Key         string
 	Prompt      string
@@ -55,8 +54,10 @@ func (t *TextInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	var cmd tea.Cmd
 
+	//nolint:gocritic
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		//nolint:exhaustive
 		switch msg.Type {
 		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
 			return t, tea.Quit

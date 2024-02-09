@@ -18,6 +18,7 @@ const (
 	NoticeLevelError   NoticeLevel = "error"
 
 	FormatDocument Format = "doc"
+	FormatList     Format = "list"
 	FormatJSON     Format = "json"
 	FormatYAML     Format = "yaml"
 )

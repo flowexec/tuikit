@@ -108,12 +108,14 @@ func (v *EntityView) renderedContent() string {
 		content, err = v.entity.YAML()
 		content = fmt.Sprintf("```yaml\n%s\n```", content)
 	case FormatJSON:
-		content, err = v.entity.JSON(false)
+		content, err = v.entity.JSON()
 		content = fmt.Sprintf("```json\n%s\n```", content)
 	case FormatDocument:
+		content = v.entity.Markdown()
+	case FormatList:
 		fallthrough
 	default:
-		content = v.entity.Markdown()
+		content = "unsupported format"
 	}
 	if err != nil {
 		v.err = NewErrorView(err, v.styles)

@@ -23,7 +23,7 @@ func (h *Header) View() string {
 }
 
 func (h *Header) Print() {
-	fmt.Println(h.View())
+	fmt.Println(h.View() + "\n")
 }
 
 func ContextStr(label, val string, styles styles.Theme) string {

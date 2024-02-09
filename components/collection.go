@@ -34,7 +34,7 @@ func NewCollectionView(
 	keys ...KeyCallback,
 ) TeaModel {
 	if format == "" {
-		format = FormatDocument
+		format = FormatList
 	}
 	items := make([]list.Item, 0)
 	for _, item := range collection.Items() {
@@ -82,11 +82,11 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		v.model.SetSize(v.width, v.height)
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "-", "d":
-			if v.format == FormatDocument {
+		case "-", "l":
+			if v.format == FormatList {
 				return v, nil
 			}
-			v.format = FormatDocument
+			v.format = FormatList
 		case "y":
 			if v.format == FormatYAML {
 				return v, nil
@@ -155,13 +155,15 @@ func (v *CollectionView) renderedContent() string {
 		content, err = v.collection.JSON()
 		content = fmt.Sprintf("```json\n%s\n```", content)
 		isMkdwn = true
-	case FormatDocument:
-		fallthrough
-	default:
+	case FormatList:
 		v.model.SetSize(v.width, v.height)
 		v.UpdateItemsFromCollections()
 		style := v.styles.Collection().Width(v.width)
 		content = style.Render(v.model.View())
+	case FormatDocument:
+		fallthrough
+	default:
+		content = "unsupported format"
 	}
 	if err != nil {
 		v.err = NewErrorView(err, v.styles)

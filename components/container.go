@@ -52,6 +52,15 @@ func InitalizeContainer(
 		}
 		cancel()
 	}()
+	readyTimout := time.After(10 * time.Second)
+	for {
+		if a.Ready() {
+			break
+		} else if time.Now().After(<-readyTimout) {
+			panic("timed out waiting for container to be ready")
+		}
+		time.Sleep(1 * time.Second)
+	}
 	a.program = prgm
 	return a
 }
@@ -74,6 +83,16 @@ func (a *ContainerView) Init() tea.Cmd {
 func (a *ContainerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := make([]tea.Cmd, 0)
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		a.ready = true
+		msg.Width = int(math.Floor(float64(msg.Width) * 0.90))
+		a.width = msg.Width
+		msg.Height -= heightPadding
+		a.height = msg.Height
+		if a.pendingView != nil {
+			a.activeView = a.pendingView
+			a.pendingView = nil
+		}
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -89,19 +108,6 @@ func (a *ContainerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return a, nil
 			}
 		}
-	case tea.WindowSizeMsg:
-		msg.Width = int(math.Floor(float64(msg.Width) * 0.90))
-		a.width = msg.Width
-		msg.Height -= heightPadding
-		a.height = msg.Height
-
-		if !a.Ready() {
-			if a.pendingView != nil {
-				a.activeView = a.pendingView
-				a.pendingView = nil
-			}
-			a.ready = true
-		}
 	case TickMsg:
 		cmds = append(cmds, tea.Tick(time.Second, func(t time.Time) tea.Msg {
 			return TickMsg(t)
@@ -116,7 +122,7 @@ func (a *ContainerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (a *ContainerView) Ready() bool {
-	return a.ready && a.header.CtxVal != "unk"
+	return a.ready
 }
 
 func (a *ContainerView) Finalize() {

@@ -148,7 +148,7 @@ func (t *Theme) LoggerStyles() *log.Styles {
 	baseStyles.Levels = map[log.Level]lipgloss.Style{
 		log.InfoLevel:  baseStyles.Levels[log.InfoLevel].Foreground(t.InfoColor),
 		log.WarnLevel:  baseStyles.Levels[log.WarnLevel].Foreground(t.WarningColor),
-		log.ErrorLevel: baseStyles.Levels[log.ErrorLevel].Foreground(t.ErrorColor),
+		log.ErrorLevel: baseStyles.Levels[log.ErrorLevel].Foreground(t.ErrorColor).SetString("ERR"),
 		log.DebugLevel: baseStyles.Levels[log.DebugLevel].Foreground(t.TertiaryColor),
 		log.FatalLevel: baseStyles.Levels[log.FatalLevel].Foreground(t.SecondaryColor).SetString("ERR"),
 	}

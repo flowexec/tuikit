@@ -16,7 +16,7 @@ const (
 
 func NewArchiveLogFile(archiveDir string) *os.File {
 	if dir, err := os.Stat(archiveDir); os.IsNotExist(err) {
-		err := os.MkdirAll(archiveDir, 0755)
+		err := os.MkdirAll(archiveDir, 0750)
 		if err != nil {
 			panic(fmt.Errorf("failed to create archive directory: %w", err))
 		}

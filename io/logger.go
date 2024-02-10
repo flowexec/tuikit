@@ -3,18 +3,12 @@ package io
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"slices"
 	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/muesli/termenv"
 
 	"github.com/jahvon/tuikit/styles"
-)
-
-const (
-	MaxArchiveSize = 50
 )
 
 type Logger struct {
@@ -39,7 +33,7 @@ func NewLogger(style styles.Theme, archiveDir string) *Logger {
 	logger.stdOutHandler = stdOutHandler
 
 	if archiveDir != "" {
-		archiveFile := newArchiveLogFile(archiveDir)
+		archiveFile := NewArchiveLogFile(archiveDir)
 		archiveHandler := log.NewWithOptions(
 			archiveFile,
 			log.Options{
@@ -51,7 +45,7 @@ func NewLogger(style styles.Theme, archiveDir string) *Logger {
 		applyStorageFormat(archiveHandler)
 		logger.archiveFile = archiveFile
 		logger.archiveHandler = archiveHandler
-		rotateArchive(logger)
+		RotateArchive(logger)
 	}
 
 	return logger
@@ -68,61 +62,6 @@ func applyStorageFormat(handler *log.Logger) {
 	handler.SetFormatter(log.JSONFormatter)
 	handler.SetTimeFormat(time.RFC822)
 	handler.SetStyles(log.DefaultStyles())
-}
-
-func newArchiveLogFile(archiveDir string) *os.File {
-	if dir, err := os.Stat(archiveDir); os.IsNotExist(err) {
-		err := os.MkdirAll(archiveDir, 0755)
-		if err != nil {
-			panic(fmt.Errorf("failed to create archive directory: %w", err))
-		}
-	} else if !dir.IsDir() {
-		panic(fmt.Errorf("archive directory is not a directory"))
-	}
-	writer, err := os.Create(filepath.Clean(
-		fmt.Sprintf("%s/%s.log", archiveDir, time.Now().Format("2006-01-02-15-04-05")),
-	))
-	if err != nil {
-		panic(fmt.Errorf("failed to create archive log file: %w", err))
-	}
-	return writer
-}
-
-func rotateArchive(logger *Logger) {
-	if logger.archiveDir == "" {
-		return
-	}
-	files, err := os.ReadDir(logger.archiveDir)
-	if err != nil {
-		logger.Fatalf("failed to read archive directory: %s", err)
-	}
-	if len(files) < MaxArchiveSize {
-		return
-	}
-	slices.SortFunc(files, func(i, j os.DirEntry) int {
-		iInfo, err := i.Info()
-		if err != nil {
-			logger.Fatalf("failed to get info for archive file: %s", err)
-		}
-		jInfo, err := j.Info()
-		if err != nil {
-			logger.Fatalf("failed to get info for archive file: %s", err)
-		}
-		if iInfo.ModTime().Before(jInfo.ModTime()) {
-			return -1
-		} else if iInfo.ModTime().After(jInfo.ModTime()) {
-			return 1
-		}
-		return 0
-	})
-
-	for i := 0; i < len(files)-MaxArchiveSize; i++ {
-		oldest := files[i]
-		err := os.Remove(filepath.Clean(fmt.Sprintf("%s/%s", logger.archiveDir, oldest.Name())))
-		if err != nil {
-			logger.Fatalf("failed to remove oldest archive file: %s", err)
-		}
-	}
 }
 
 // SetLevel sets the log level for the logger.
@@ -263,9 +202,19 @@ func (l *Logger) PlainTextSuccess(msg string) {
 	}
 }
 
-func (l *Logger) Close() error {
-	if l.archiveFile != nil {
-		return l.archiveFile.Close()
+func (l *Logger) Flush() error {
+	if l.archiveFile != nil { //nolint:nestif
+		if err := l.archiveFile.Sync(); err != nil {
+			return err
+		}
+		if err := l.archiveFile.Close(); err != nil {
+			return err
+		}
+		if info, err := os.Stat(l.archiveFile.Name()); err == nil {
+			if info.Size() == 0 {
+				_ = os.Remove(l.archiveFile.Name())
+			}
+		}
 	}
 	return nil
 }

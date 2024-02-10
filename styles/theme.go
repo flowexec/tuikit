@@ -40,9 +40,9 @@ func (t *Theme) Collection() lipgloss.Style {
 		Padding(0, 1)
 }
 
-func (t *Theme) TermArea() lipgloss.Style {
+func (t *Theme) Box() lipgloss.Style {
 	return lipgloss.NewStyle().
-		BorderStyle(lipgloss.HiddenBorder()).
+		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(t.TertiaryColor).
 		Padding(0, 1).
 		MarginLeft(2)

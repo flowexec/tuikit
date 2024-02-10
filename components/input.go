@@ -20,12 +20,14 @@ type TextInput struct {
 }
 
 func (t *TextInput) Value() string {
+	if t.input == nil {
+		return ""
+	}
 	return t.input.Value()
 }
 
 func (t *TextInput) RunProgram(styles styles.Theme) (string, error) {
 	in := textinput.New()
-	in.PromptStyle = in.PromptStyle.Foreground(styles.InfoColor)
 	echoMode := textinput.EchoNormal
 	if t.Hidden {
 		echoMode = textinput.EchoPassword
@@ -35,6 +37,8 @@ func (t *TextInput) RunProgram(styles styles.Theme) (string, error) {
 		in.Placeholder = t.Placeholder
 	}
 	in.Prompt = t.Prompt
+	in.PromptStyle = in.PromptStyle.Foreground(styles.InfoColor).PaddingRight(2)
+	in.Focus()
 	t.input = &in
 
 	p := tea.NewProgram(t)
@@ -89,12 +93,12 @@ func (t *TextInput) Type() string {
 	return fmt.Sprintf("textinput-%s", t.Key)
 }
 
-type TextInputList []TextInput
+type TextInputList []*TextInput
 
 func (t TextInputList) FindByKey(key string) *TextInput {
 	for _, in := range t {
 		if in.Key == key {
-			return &in
+			return in
 		}
 	}
 	return nil
@@ -108,7 +112,7 @@ func (t TextInputList) ValueMap() map[string]string {
 	return m
 }
 
-func ProcessInputs(styles styles.Theme, inputs ...TextInput) (TextInputList, error) {
+func ProcessInputs(styles styles.Theme, inputs ...*TextInput) (TextInputList, error) {
 	for _, in := range inputs {
 		_, err := in.RunProgram(styles)
 		if err != nil {

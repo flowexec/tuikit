@@ -37,7 +37,7 @@ func (v *ErrorView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (v *ErrorView) View() string {
 	return v.styles.RenderError(
-		fmt.Errorf("!! encountered error !!\n%w", v.err).Error(),
+		fmt.Errorf("!! encountered error !!\n%w\n\n", v.err).Error(), //nolint:stylecheck
 	)
 }
 

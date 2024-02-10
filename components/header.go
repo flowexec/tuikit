@@ -28,12 +28,12 @@ func (h *Header) Print() {
 
 func ContextStr(label, val string, styles styles.Theme) string {
 	if label == "" {
-		label = "ctx"
+		label = "ctx:"
 	}
 	if val == "" {
 		val = styles.RenderUnknown("unk")
 	}
-	return styles.RenderContext(label, val)
+	return styles.RenderContext(label+":", val)
 }
 
 func NoticeStr(notice string, lvl NoticeLevel, styles styles.Theme) string {

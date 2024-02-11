@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	stdIO "io"
-	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/wordwrap"
 
 	"github.com/jahvon/tuikit/io"
 	"github.com/jahvon/tuikit/styles"
@@ -19,11 +19,11 @@ import (
 
 type LogArchiveView struct {
 	archiveDir    string
-	cachedEntries []string
+	cachedEntries []io.ArchiveEntry
 
 	model       *list.Model
 	items       []list.Item
-	activeEntry string
+	activeEntry *io.ArchiveEntry
 	err         TeaModel
 
 	width, height int
@@ -38,7 +38,7 @@ func NewLogArchiveView(state *TerminalState, archiveDir string, lastEntry bool) 
 	}
 	slices.Reverse(entries)
 	for _, entry := range entries {
-		items = append(items, &logArchiveItem{archivePath: entry})
+		items = append(items, entry)
 	}
 	delegate := &logArchiveDelegate{styles: state.Theme}
 	model := list.New(items, delegate, state.Width, state.Height)
@@ -48,9 +48,9 @@ func NewLogArchiveView(state *TerminalState, archiveDir string, lastEntry bool) 
 	model.SetStatusBarItemName("log entry", "log entries")
 	model.Styles = state.Theme.ListStyles()
 
-	var lastEntryFile string
+	var lastEntryFile *io.ArchiveEntry
 	if lastEntry {
-		lastEntryFile = entries[0]
+		lastEntryFile = &entries[0]
 	}
 	return &LogArchiveView{
 		archiveDir:    archiveDir,
@@ -68,44 +68,51 @@ func (v *LogArchiveView) Init() tea.Cmd {
 	return nil
 }
 
-//nolint:gocognit
+//nolint:gocognit,funlen
 func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if v.err != nil {
 		return v.err.Update(msg)
 	}
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
 		v.height = msg.Height
 		v.model.SetSize(v.width, v.height)
 	case TickMsg:
-		if v.activeEntry != "" {
+		if v.activeEntry != nil {
 			time.Sleep(time.Second)
 			return v, tea.Quit
 		}
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "x":
-			if v.activeEntry != "" {
+			if v.activeEntry != nil {
 				return v, nil
 			}
 			for _, entry := range v.cachedEntries {
-				if err := io.DeleteArchiveEntry(entry); err != nil {
+				if err := io.DeleteArchiveEntry(entry.Path); err != nil {
 					v.err = NewErrorView(err, v.styles)
 				}
 			}
 			v.items = nil
 			v.model.SetItems(v.items)
 		case "d":
-			if v.activeEntry != "" {
+			if v.activeEntry != nil {
 				return v, nil
 			}
 			selected := v.model.SelectedItem()
 			if selected == nil {
 				return v, nil
 			}
-			if err := io.DeleteArchiveEntry(selected.FilterValue()); err != nil {
+			var selectedEntry *io.ArchiveEntry
+			for i, entry := range v.cachedEntries {
+				if entry.FilterValue() == selected.FilterValue() {
+					v.cachedEntries = append(v.cachedEntries[:i], v.cachedEntries[i+1:]...)
+					selectedEntry = &v.cachedEntries[i]
+					break
+				}
+			}
+			if err := io.DeleteArchiveEntry(selectedEntry.Path); err != nil {
 				v.err = NewErrorView(err, v.styles)
 			}
 			for i, entry := range v.items {
@@ -116,18 +123,22 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			v.model.SetItems(v.items)
 		case tea.KeyEnter.String():
-			if v.activeEntry != "" {
+			if v.activeEntry != nil {
 				return v, nil
 			}
 			selected := v.model.SelectedItem()
 			if selected == nil {
 				return v, nil
 			}
-			v.activeEntry = selected.FilterValue()
+			for i, entry := range v.cachedEntries {
+				if entry.FilterValue() == selected.FilterValue() {
+					v.activeEntry = &v.cachedEntries[i]
+					return v, nil
+				}
+			}
 			return v, nil
 		}
 	}
-
 	model, cmd := v.model.Update(msg)
 	v.model = &model
 	return v, cmd
@@ -141,16 +152,16 @@ func (v *LogArchiveView) View() string {
 	var content string
 	var err error
 	switch {
-	case v.activeEntry != "":
-		content, err = io.ReadArchiveEntry(v.activeEntry)
+	case v.activeEntry != nil:
+		content, err = v.activeEntry.Read()
 		if err != nil {
 			v.err = NewErrorView(err, v.styles)
 			return v.err.View()
 		} else if content == "" {
 			content = "\nno data found in log entry\n"
 		}
-		content = "\n" + content + "\n"
-	case len(v.cachedEntries) == 0:
+		content = wordwrap.String("\n"+content+"\n", v.width)
+	case len(v.items) == 0:
 		v.err = NewErrorView(errors.New("no log entries found"), v.styles)
 		return v.err.View()
 	default:
@@ -166,14 +177,12 @@ func (v *LogArchiveView) HelpMsg() string {
 }
 
 func (v *LogArchiveView) Interactive() bool {
-	return v.err == nil && v.activeEntry == ""
+	return v.err == nil && v.activeEntry == nil
 }
 
 func (v *LogArchiveView) Type() string {
 	return "log-archive"
 }
-
-type logArchiveItem struct{ archivePath string }
 
 type logArchiveDelegate struct {
 	styles styles.Theme
@@ -183,14 +192,16 @@ func (d *logArchiveDelegate) Height() int                             { return 1
 func (d *logArchiveDelegate) Spacing() int                            { return 0 }
 func (d *logArchiveDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d *logArchiveDelegate) Render(w stdIO.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(*logArchiveItem)
+	i, ok := listItem.(io.ArchiveEntry)
 	if !ok {
 		return
 	}
-	str := fmt.Sprintf("%d. %s", index+1, i.Title())
-	fn := lipgloss.NewStyle().Foreground(d.styles.White).PaddingLeft(2).Render
+	title := fmt.Sprintf("%d. %s", index+1, i.Title())
+	description := i.Description()
+	titleStyle := lipgloss.NewStyle().Foreground(d.styles.White).PaddingLeft(2).Render
+	descriptionStyle := lipgloss.NewStyle().Foreground(d.styles.White).Render
 	if index == m.Index() {
-		fn = func(s ...string) string {
+		titleStyle = func(s ...string) string {
 			return lipgloss.NewStyle().
 				Foreground(d.styles.SecondaryColor).
 				BorderForeground(d.styles.SecondaryColor).
@@ -198,17 +209,8 @@ func (d *logArchiveDelegate) Render(w stdIO.Writer, m list.Model, index int, lis
 				PaddingLeft(2).
 				Render("" + strings.Join(s, " "))
 		}
+		descriptionStyle = lipgloss.NewStyle().Foreground(d.styles.SecondaryColor).Render
 	}
-	_, _ = fmt.Fprint(w, fn(str))
+	itemStr := titleStyle(title) + descriptionStyle(fmt.Sprintf(" (%s)", description))
+	_, _ = fmt.Fprint(w, itemStr)
 }
-
-func (l *logArchiveItem) Title() string {
-	name := strings.TrimSuffix(filepath.Base(l.archivePath), ".log")
-	nameTime, err := time.Parse(io.LogEntryTimeFormat, name)
-	if err != nil {
-		return name
-	}
-	return nameTime.Format("03:04PM 01/02/2006")
-}
-func (l *logArchiveItem) Description() string { return "" }
-func (l *logArchiveItem) FilterValue() string { return l.archivePath }

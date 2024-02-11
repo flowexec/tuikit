@@ -1,7 +1,9 @@
 package io
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -14,6 +16,33 @@ const (
 	LogEntryTimeFormat = "2006-01-02-15-04-05"
 )
 
+type ArchiveEntry struct {
+	Args string
+	Time time.Time
+	Path string
+}
+
+func (e ArchiveEntry) Title() string {
+	return e.Args
+}
+func (e ArchiveEntry) Description() string {
+	return e.Time.Format("03:04PM 01/02/2006")
+}
+func (e ArchiveEntry) FilterValue() string {
+	return e.Title() + " " + e.Description()
+}
+
+func (e ArchiveEntry) Read() (string, error) {
+	if e.Path == "" {
+		return "", errors.New("archive entry path is empty")
+	}
+	data, err := os.ReadFile(filepath.Clean(e.Path))
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
 func NewArchiveLogFile(archiveDir string) *os.File {
 	if dir, err := os.Stat(archiveDir); os.IsNotExist(err) {
 		err := os.MkdirAll(archiveDir, 0750)
@@ -23,9 +52,7 @@ func NewArchiveLogFile(archiveDir string) *os.File {
 	} else if !dir.IsDir() {
 		panic(fmt.Errorf("archive directory is not a directory"))
 	}
-	writer, err := os.Create(filepath.Clean(
-		filepath.Join(archiveDir, fmt.Sprintf("%s.log", time.Now().Local().Format(LogEntryTimeFormat))),
-	))
+	writer, err := os.Create(filepath.Clean(filepath.Join(archiveDir, NewArchiveFileName())))
 	if err != nil {
 		panic(fmt.Errorf("failed to create archive log file: %w", err))
 	}
@@ -62,22 +89,14 @@ func RotateArchive(logger *Logger) {
 
 	for i := 0; i < len(files)-MaxArchiveSize; i++ {
 		oldest := files[i]
-		err := os.Remove(filepath.Clean(fmt.Sprintf("%s/%s", logger.archiveDir, oldest.Name())))
+		err := os.Remove(filepath.Clean(filepath.Join(logger.archiveDir, oldest.Name())))
 		if err != nil {
 			logger.Fatalf("failed to remove oldest archive file: %s", err)
 		}
 	}
 }
 
-func ReadArchiveEntry(entry string) (string, error) {
-	data, err := os.ReadFile(filepath.Clean(entry))
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
-func ListArchiveEntries(archiveDir string) ([]string, error) {
+func ListArchiveEntries(archiveDir string) ([]ArchiveEntry, error) {
 	_, err := os.Stat(archiveDir)
 	if err != nil {
 		return nil, err
@@ -87,7 +106,7 @@ func ListArchiveEntries(archiveDir string) ([]string, error) {
 		return nil, err
 	}
 
-	var entries []string
+	var entries []ArchiveEntry
 	for _, file := range files {
 		if file.IsDir() {
 			continue
@@ -99,25 +118,20 @@ func ListArchiveEntries(archiveDir string) ([]string, error) {
 		} else if info.Size() == 0 {
 			continue
 		}
-		name := filepath.Base(file.Name())
-		_, err := time.Parse(LogEntryTimeFormat, strings.TrimSuffix(name, ".log"))
+		args, ts, err := ParseArchiveFileMetadata(file.Name())
 		if err != nil {
 			continue
 		}
-		entries = append(entries, filepath.Join(archiveDir, name))
+		entries = append(entries, ArchiveEntry{
+			Args: args,
+			Time: ts,
+			Path: filepath.Clean(filepath.Join(archiveDir, file.Name())),
+		})
 	}
-	slices.SortFunc(entries, func(i, j string) int {
-		iTime, err := time.Parse(LogEntryTimeFormat, filepath.Base(i))
-		if err != nil {
-			return 0
-		}
-		jTime, err := time.Parse(LogEntryTimeFormat, filepath.Base(j))
-		if err != nil {
-			return 0
-		}
-		if iTime.Before(jTime) {
+	slices.SortFunc(entries, func(i, j ArchiveEntry) int {
+		if i.Time.Before(j.Time) {
 			return -1
-		} else if iTime.After(jTime) {
+		} else if i.Time.After(j.Time) {
 			return 1
 		}
 		return 0
@@ -126,6 +140,28 @@ func ListArchiveEntries(archiveDir string) ([]string, error) {
 	return entries, nil
 }
 
-func DeleteArchiveEntry(entry string) error {
-	return os.Remove(filepath.Clean(entry))
+func DeleteArchiveEntry(entryPath string) error {
+	return os.Remove(filepath.Clean(entryPath))
+}
+
+func NewArchiveFileName() string {
+	args := os.Args
+	argsStr := url.QueryEscape(strings.Join(args[1:], " "))
+	return fmt.Sprintf("%s__%s.log", argsStr, time.Now().Local().Format(LogEntryTimeFormat))
+}
+
+func ParseArchiveFileMetadata(name string) (args string, ts time.Time, err error) {
+	parts := strings.Split(strings.TrimSuffix(filepath.Base(name), ".log"), "__")
+	if len(parts) != 2 {
+		return "", time.Time{}, errors.New("invalid archive file name")
+	}
+	args, err = url.QueryUnescape(parts[0])
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	ts, err = time.Parse(LogEntryTimeFormat, parts[1])
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	return args, ts, nil
 }

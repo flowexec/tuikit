@@ -1,6 +1,3 @@
-displayName: Terminal UI Kit
-description: |
-    Source code for tuikit
-    GitHub Repo: github.com/jahvon/tuikit
+displayName: tuikit
 git:
     enabled: false

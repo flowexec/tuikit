@@ -196,7 +196,7 @@ func (l *Logger) PlainTextInfo(msg string) {
 }
 
 func (l *Logger) PlainTextSuccess(msg string) {
-	_, _ = fmt.Fprintln(os.Stdout, msg)
+	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderSuccess(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}

@@ -52,14 +52,14 @@ func InitalizeContainer(
 		}
 		cancel()
 	}()
-	readyTimout := time.After(10 * time.Second)
+	readyTimout := time.Now().Add(10 * time.Second)
 	for {
 		if a.Ready() {
 			break
-		} else if time.Now().After(<-readyTimout) {
+		} else if time.Now().After(readyTimout) {
 			panic("timed out waiting for container to be ready")
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 	a.program = prgm
 	return a
@@ -73,7 +73,7 @@ func (a *ContainerView) Init() tea.Cmd {
 	cmds = append(
 		cmds,
 		tea.SetWindowTitle(a.appName),
-		tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
+		tea.Tick(time.Millisecond*250, func(t time.Time) tea.Msg {
 			return TickMsg(t)
 		}),
 	)
@@ -83,6 +83,8 @@ func (a *ContainerView) Init() tea.Cmd {
 func (a *ContainerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := make([]tea.Cmd, 0)
 	switch msg := msg.(type) {
+	case tea.QuitMsg:
+		return a, tea.Quit
 	case tea.WindowSizeMsg:
 		a.ready = true
 		msg.Width = int(math.Floor(float64(msg.Width) * 0.90))
@@ -178,7 +180,7 @@ func (a *ContainerView) SetView(model TeaModel) {
 	}
 	a.activeView = model
 	cmd := a.activeView.Init()
-	a.Update(cmd)
+	a.program.Send(cmd)
 }
 
 func (a *ContainerView) HandleError(err error) {

@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/log v0.3.1
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.15.2
-	golang.org/x/term v0.13.0
+	golang.org/x/term v0.17.0
 )
 
 require (

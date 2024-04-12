@@ -24,5 +24,7 @@ func BaseTheme() Theme {
 		Black:             lipgloss.AdaptiveColor{Dark: "#2b2a2a", Light: "#000000"},
 		SpinnerType:       spinner.Points,
 		MarkdownStyleJSON: BaseMarkdownStylesJSON,
+		IncludeLogLevel:   true,
+		IncludeLogTime:    true,
 	}
 }

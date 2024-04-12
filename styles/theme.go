@@ -20,8 +20,7 @@ type Theme struct {
 	Gray              lipgloss.AdaptiveColor
 	Black             lipgloss.AdaptiveColor
 
-	IncludeLogLevel bool
-	IncludeLogTime  bool
+	UsePlainTextLogger bool
 }
 
 func (t *Theme) Spinner() lipgloss.Style {
@@ -145,22 +144,14 @@ func (t *Theme) ListItemStyles() list.DefaultItemStyles {
 
 func (t *Theme) LoggerStyles() *log.Styles {
 	baseStyles := log.DefaultStyles()
-	if t.IncludeLogTime {
-		baseStyles.Timestamp = baseStyles.Timestamp.Foreground(lipgloss.AdaptiveColor{Dark: "#505050", Light: "#505050"})
+	baseStyles.Timestamp = baseStyles.Timestamp.Foreground(lipgloss.AdaptiveColor{Dark: "#505050", Light: "#505050"})
+	baseStyles.Levels = map[log.Level]lipgloss.Style{
+		log.InfoLevel:  baseStyles.Levels[log.InfoLevel].Foreground(t.InfoColor),
+		log.WarnLevel:  baseStyles.Levels[log.WarnLevel].Foreground(t.WarningColor),
+		log.ErrorLevel: baseStyles.Levels[log.ErrorLevel].Foreground(t.ErrorColor).SetString("ERR"),
+		log.DebugLevel: baseStyles.Levels[log.DebugLevel].Foreground(t.TertiaryColor),
+		log.FatalLevel: baseStyles.Levels[log.FatalLevel].Foreground(t.SecondaryColor).SetString("ERR"),
 	}
-
-	if t.IncludeLogLevel {
-		baseStyles.Levels = map[log.Level]lipgloss.Style{
-			log.InfoLevel:  baseStyles.Levels[log.InfoLevel].Foreground(t.InfoColor),
-			log.WarnLevel:  baseStyles.Levels[log.WarnLevel].Foreground(t.WarningColor),
-			log.ErrorLevel: baseStyles.Levels[log.ErrorLevel].Foreground(t.ErrorColor).SetString("ERR"),
-			log.DebugLevel: baseStyles.Levels[log.DebugLevel].Foreground(t.TertiaryColor),
-			log.FatalLevel: baseStyles.Levels[log.FatalLevel].Foreground(t.SecondaryColor).SetString("ERR"),
-		}
-	} else {
-		baseStyles.Levels = make(map[log.Level]lipgloss.Style)
-	}
-
 	baseStyles.Key = baseStyles.Key.Foreground(t.SecondaryColor)
 	baseStyles.Value = baseStyles.Value.Foreground(t.Gray)
 

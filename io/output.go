@@ -11,11 +11,10 @@ type StdOutWriter struct {
 }
 
 func (w StdOutWriter) Write(p []byte) (n int, err error) {
-	trimmedP := strings.TrimSpace(string(p))
-	if trimmedP == "" {
+	if strings.TrimSpace(string(p)) == "" {
 		return len(p), nil
 	}
-	splitP := strings.Split(trimmedP, "\n")
+	splitP := strings.Split(string(p), "\n")
 	for _, line := range splitP {
 		if line == "---break" {
 			w.AsPlainText = true

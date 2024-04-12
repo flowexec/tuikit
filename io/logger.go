@@ -52,8 +52,12 @@ func NewLogger(style styles.Theme, archiveDir string) *Logger {
 }
 
 func applyHumanReadableFormat(handler *log.Logger, style styles.Theme) {
-	handler.SetFormatter(log.TextFormatter)
-	handler.SetTimeFormat(time.Kitchen)
+	if style.UsePlainTextLogger {
+		handler.SetFormatter(log.TextFormatter)
+	} else {
+		handler.SetFormatter(log.LogfmtFormatter)
+		handler.SetTimeFormat(time.Kitchen)
+	}
 	handler.SetStyles(style.LoggerStyles())
 	handler.SetColorProfile(termenv.ColorProfile())
 }
@@ -93,9 +97,33 @@ func (l *Logger) Println(data string) {
 }
 
 func (l *Logger) AsPlainText(exec func()) {
+	if l.style.UsePlainTextLogger {
+		exec()
+		return
+	}
+
 	l.stdOutHandler.SetFormatter(log.TextFormatter)
 	if l.archiveHandler != nil {
 		l.archiveHandler.SetFormatter(log.TextFormatter)
+	}
+
+	exec()
+
+	l.stdOutHandler.SetFormatter(log.LogfmtFormatter)
+	if l.archiveHandler != nil {
+		l.archiveHandler.SetFormatter(log.LogfmtFormatter)
+	}
+}
+
+func (l *Logger) AsJSON(exec func()) {
+	if !l.style.UsePlainTextLogger {
+		exec()
+		return
+	}
+
+	l.stdOutHandler.SetFormatter(log.JSONFormatter)
+	if l.archiveHandler != nil {
+		l.archiveHandler.SetFormatter(log.JSONFormatter)
 	}
 
 	exec()

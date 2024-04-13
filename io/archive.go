@@ -59,7 +59,7 @@ func NewArchiveLogFile(archiveDir string) *os.File {
 	return writer
 }
 
-func RotateArchive(logger *Logger) {
+func RotateArchive(logger *StandardLogger) {
 	if logger.archiveDir == "" {
 		return
 	}

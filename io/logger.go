@@ -11,7 +11,7 @@ import (
 	"github.com/jahvon/tuikit/styles"
 )
 
-type Logger struct {
+type StandardLogger struct {
 	stdOutHandler  *log.Logger
 	archiveHandler *log.Logger
 	style          styles.Theme
@@ -19,8 +19,8 @@ type Logger struct {
 	archiveFile    *os.File
 }
 
-func NewLogger(style styles.Theme, archiveDir string) *Logger {
-	logger := &Logger{style: style}
+func NewLogger(style styles.Theme, archiveDir string) *StandardLogger {
+	logger := &StandardLogger{style: style}
 	stdOutHandler := log.NewWithOptions(
 		os.Stdout,
 		log.Options{
@@ -73,7 +73,7 @@ func applyStorageFormat(handler *log.Logger) {
 // 0 = Info
 // 1 = Debug
 // Default is Info.
-func (l *Logger) SetLevel(level int) {
+func (l *StandardLogger) SetLevel(level int) {
 	switch level {
 	case -1:
 		l.stdOutHandler.SetLevel(log.FatalLevel)
@@ -86,7 +86,7 @@ func (l *Logger) SetLevel(level int) {
 	}
 }
 
-func (l *Logger) Println(data string) {
+func (l *StandardLogger) Println(data string) {
 	_, err := fmt.Fprintln(os.Stdout, data)
 	if err != nil {
 		panic(err)
@@ -96,7 +96,7 @@ func (l *Logger) Println(data string) {
 	}
 }
 
-func (l *Logger) AsPlainText(exec func()) {
+func (l *StandardLogger) AsPlainText(exec func()) {
 	if l.style.UsePlainTextLogger {
 		exec()
 		return
@@ -115,7 +115,7 @@ func (l *Logger) AsPlainText(exec func()) {
 	}
 }
 
-func (l *Logger) AsJSON(exec func()) {
+func (l *StandardLogger) AsJSON(exec func()) {
 	if !l.style.UsePlainTextLogger {
 		exec()
 		return
@@ -134,21 +134,21 @@ func (l *Logger) AsJSON(exec func()) {
 	}
 }
 
-func (l *Logger) Infof(msg string, args ...any) {
+func (l *StandardLogger) Infof(msg string, args ...any) {
 	l.stdOutHandler.Infof(msg, args...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Infof(msg, args...)
 	}
 }
 
-func (l *Logger) Debugf(msg string, args ...any) {
+func (l *StandardLogger) Debugf(msg string, args ...any) {
 	l.stdOutHandler.Debugf(msg, args...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Debugf(msg, args...)
 	}
 }
 
-func (l *Logger) Error(err error, msg string) {
+func (l *StandardLogger) Error(err error, msg string) {
 	if msg == "" {
 		l.Errorf(err.Error())
 		return
@@ -156,81 +156,81 @@ func (l *Logger) Error(err error, msg string) {
 	l.Errorx(err.Error(), "err", err)
 }
 
-func (l *Logger) Errorf(msg string, args ...any) {
+func (l *StandardLogger) Errorf(msg string, args ...any) {
 	l.stdOutHandler.Errorf(msg, args...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Errorf(msg, args...)
 	}
 }
 
-func (l *Logger) Warnf(msg string, args ...any) {
+func (l *StandardLogger) Warnf(msg string, args ...any) {
 	l.stdOutHandler.Warnf(msg, args...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Warnf(msg, args...)
 	}
 }
 
-func (l *Logger) FatalErr(err error) {
+func (l *StandardLogger) FatalErr(err error) {
 	l.Fatalf(err.Error())
 }
 
-func (l *Logger) Fatalf(msg string, args ...any) {
+func (l *StandardLogger) Fatalf(msg string, args ...any) {
 	if l.archiveHandler != nil {
 		l.archiveHandler.Errorf(msg, args...)
 	}
 	l.stdOutHandler.Fatalf(msg, args...)
 }
 
-func (l *Logger) Infox(msg string, kv ...any) {
+func (l *StandardLogger) Infox(msg string, kv ...any) {
 	l.stdOutHandler.Info(msg, kv...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Info(msg, kv...)
 	}
 }
 
-func (l *Logger) Debugx(msg string, kv ...any) {
+func (l *StandardLogger) Debugx(msg string, kv ...any) {
 	l.stdOutHandler.Debug(msg, kv...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Debug(msg, kv...)
 	}
 }
 
-func (l *Logger) Errorx(msg string, kv ...any) {
+func (l *StandardLogger) Errorx(msg string, kv ...any) {
 	l.stdOutHandler.Error(msg, kv...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Error(msg, kv...)
 	}
 }
 
-func (l *Logger) Warnx(msg string, kv ...any) {
+func (l *StandardLogger) Warnx(msg string, kv ...any) {
 	l.stdOutHandler.Warn(msg, kv...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Warn(msg, kv...)
 	}
 }
 
-func (l *Logger) Fatalx(msg string, kv ...any) {
+func (l *StandardLogger) Fatalx(msg string, kv ...any) {
 	if l.archiveHandler != nil {
 		l.archiveHandler.Error(msg, kv...)
 	}
 	l.stdOutHandler.Fatal(msg, kv...)
 }
 
-func (l *Logger) PlainTextInfo(msg string) {
+func (l *StandardLogger) PlainTextInfo(msg string) {
 	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderInfo(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
 }
 
-func (l *Logger) PlainTextSuccess(msg string) {
+func (l *StandardLogger) PlainTextSuccess(msg string) {
 	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderSuccess(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
 }
 
-func (l *Logger) Flush() error {
+func (l *StandardLogger) Flush() error {
 	if l.archiveFile != nil { //nolint:nestif
 		if err := l.archiveFile.Sync(); err != nil {
 			return err
@@ -245,4 +245,31 @@ func (l *Logger) Flush() error {
 		}
 	}
 	return nil
+}
+
+//go:generate mockgen -destination=mocks/mock_logger.go -package=mocks . Logger
+type Logger interface {
+	Flush() error
+	SetLevel(level int)
+
+	PlainTextInfo(msg string)
+	PlainTextSuccess(msg string)
+	AsPlainText(exec func())
+	AsJSON(exec func())
+
+	Infof(msg string, args ...any)
+	Debugf(msg string, args ...any)
+	Error(err error, msg string)
+	Errorf(msg string, args ...any)
+	Warnf(msg string, args ...any)
+	Fatalf(msg string, args ...any)
+
+	Infox(msg string, kv ...any)
+	Debugx(msg string, kv ...any)
+	Errorx(msg string, kv ...any)
+	Warnx(msg string, kv ...any)
+	Fatalx(msg string, kv ...any)
+
+	Println(data string)
+	FatalErr(err error)
 }

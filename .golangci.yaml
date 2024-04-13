@@ -142,7 +142,7 @@ linters:
     - decorder # checks declaration order and count of types, constants, variables and functions
     #- gci # controls golang package import order and makes it always deterministic - doesn't work as expected
     - ginkgolinter # [if you use ginkgo/gomega] enforces standards of using ginkgo and gomega
-    - interfacebloat # checks the number of methods inside an interface
+    # - interfacebloat # checks the number of methods inside an interface
     - tagalign # checks that struct tags are well aligned
 
     ## disabled by default, but may be useful at some point

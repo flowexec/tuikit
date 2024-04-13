@@ -25,6 +25,8 @@ jobs:
 
       - name: Init project
         run: |
+          go install go.uber.org/mock/mockgen@v0.4.0
+          
           go mod tidy
           go generate ./...
 

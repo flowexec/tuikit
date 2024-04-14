@@ -50,6 +50,18 @@ func (mr *MockLoggerMockRecorder) AsJSON(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsJSON", reflect.TypeOf((*MockLogger)(nil).AsJSON), arg0)
 }
 
+// AsLogfmt mocks base method.
+func (m *MockLogger) AsLogfmt(arg0 func()) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "AsLogfmt", arg0)
+}
+
+// AsLogfmt indicates an expected call of AsLogfmt.
+func (mr *MockLoggerMockRecorder) AsLogfmt(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsLogfmt", reflect.TypeOf((*MockLogger)(nil).AsLogfmt), arg0)
+}
+
 // AsPlainText mocks base method.
 func (m *MockLogger) AsPlainText(arg0 func()) {
 	m.ctrl.T.Helper()

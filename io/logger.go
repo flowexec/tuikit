@@ -115,23 +115,26 @@ func (l *StandardLogger) AsPlainText(exec func()) {
 	}
 }
 
-func (l *StandardLogger) AsJSON(exec func()) {
+func (l *StandardLogger) AsLogfmt(exec func()) {
 	if !l.style.UsePlainTextLogger {
 		exec()
 		return
 	}
-
-	l.stdOutHandler.SetFormatter(log.JSONFormatter)
-	if l.archiveHandler != nil {
-		l.archiveHandler.SetFormatter(log.JSONFormatter)
-	}
-
-	exec()
-
 	l.stdOutHandler.SetFormatter(log.LogfmtFormatter)
-	if l.archiveHandler != nil {
-		l.archiveHandler.SetFormatter(log.LogfmtFormatter)
+	exec()
+	l.stdOutHandler.SetFormatter(log.TextFormatter)
+}
+
+func (l *StandardLogger) AsJSON(exec func()) {
+	var formatter log.Formatter
+	if l.style.UsePlainTextLogger {
+		formatter = log.TextFormatter
+	} else {
+		formatter = log.LogfmtFormatter
 	}
+	l.stdOutHandler.SetFormatter(log.JSONFormatter)
+	exec()
+	l.stdOutHandler.SetFormatter(formatter)
 }
 
 func (l *StandardLogger) Infof(msg string, args ...any) {
@@ -255,6 +258,7 @@ type Logger interface {
 	PlainTextInfo(msg string)
 	PlainTextSuccess(msg string)
 	AsPlainText(exec func())
+	AsLogfmt(exec func())
 	AsJSON(exec func())
 
 	Infof(msg string, args ...any)

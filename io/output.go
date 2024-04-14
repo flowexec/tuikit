@@ -6,7 +6,7 @@ import (
 
 type StdOutWriter struct {
 	LogFields   []any
-	Logger      *StandardLogger
+	Logger      Logger
 	AsPlainText bool
 }
 
@@ -41,7 +41,7 @@ func (w StdOutWriter) Write(p []byte) (n int, err error) {
 
 type StdErrWriter struct {
 	LogFields   []any
-	Logger      *StandardLogger
+	Logger      Logger
 	AsPlainText bool
 }
 

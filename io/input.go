@@ -16,9 +16,7 @@ func (r StdInReader) Read(p []byte) (n int, err error) {
 		return len(p), err
 	}
 	switch {
-	case info.Size() == 0:
-		return len(p), nil
-	case info.Mode()&os.ModeNamedPipe == 0:
+	case info.Size() != 0 && info.Mode()&os.ModeNamedPipe == 0:
 		return len(p), nil
 	default:
 		return os.Stdin.Read(p)

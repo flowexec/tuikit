@@ -13,10 +13,6 @@ type NoticeLevel string
 type Format string
 
 const (
-	NoticeLevelInfo    NoticeLevel = "info"
-	NoticeLevelWarning NoticeLevel = "warning"
-	NoticeLevelError   NoticeLevel = "error"
-
 	FormatDocument Format = "doc"
 	FormatList     Format = "list"
 	FormatJSON     Format = "json"

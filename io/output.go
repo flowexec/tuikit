@@ -1,13 +1,14 @@
 package io
 
 import (
+	"fmt"
 	"strings"
 )
 
 type StdOutWriter struct {
-	LogFields   []any
-	Logger      Logger
-	AsPlainText bool
+	LogFields []any
+	Logger    Logger
+	LogMode   LogMode
 }
 
 func (w StdOutWriter) Write(p []byte) (n int, err error) {
@@ -15,34 +16,38 @@ func (w StdOutWriter) Write(p []byte) (n int, err error) {
 		return len(p), nil
 	}
 	splitP := strings.Split(string(p), "\n")
-	for _, line := range splitP {
-		if line == "---break" {
-			w.AsPlainText = true
-			continue
-		} else if w.AsPlainText && line == "---endbreak" {
-			w.AsPlainText = false
-			continue
-		}
 
-		switch {
-		case w.AsPlainText:
-			w.Logger.AsPlainText(func() {
+	curMode := w.Logger.LogMode()
+	if w.LogMode != curMode || w.LogMode == "" {
+		w.Logger.SetMode(w.LogMode)
+	}
+	for _, line := range splitP {
+		switch w.Logger.LogMode() {
+		case Hidden:
+			return len(p), nil
+		case Text:
+			w.Logger.Println(line)
+		case JSON, Logfmt:
+			if len(w.LogFields) > 0 {
+				w.Logger.Infox(line, w.LogFields...)
+			} else {
 				w.Logger.Infof(line)
-			})
-		case len(w.LogFields) > 0:
-			w.Logger.Infox(line, w.LogFields...)
+			}
 		default:
-			w.Logger.Infof(line)
+			return len(p), fmt.Errorf("unknown log mode %s", w.LogMode)
 		}
+	}
+	if w.LogMode != curMode {
+		w.Logger.SetMode(curMode)
 	}
 
 	return len(p), nil
 }
 
 type StdErrWriter struct {
-	LogFields   []any
-	Logger      Logger
-	AsPlainText bool
+	LogFields []any
+	Logger    Logger
+	LogMode   LogMode
 }
 
 func (w StdErrWriter) Write(p []byte) (n int, err error) {
@@ -51,15 +56,26 @@ func (w StdErrWriter) Write(p []byte) (n int, err error) {
 		return len(p), nil
 	}
 
-	switch {
-	case w.AsPlainText:
-		w.Logger.AsPlainText(func() {
+	curMode := w.Logger.LogMode()
+	if w.LogMode != curMode || w.LogMode == "" {
+		w.Logger.SetMode(w.LogMode)
+	}
+	switch w.Logger.LogMode() {
+	case Hidden:
+		return len(p), nil
+	case Text:
+		w.Logger.PlainTextError(trimmedP)
+	case JSON, Logfmt:
+		if len(w.LogFields) > 0 {
+			w.Logger.Errorx(trimmedP, w.LogFields...)
+		} else {
 			w.Logger.Errorf(trimmedP)
-		})
-	case len(w.LogFields) > 0:
-		w.Logger.Errorx(trimmedP, w.LogFields...)
+		}
 	default:
-		w.Logger.Errorf(trimmedP)
+		return len(p), fmt.Errorf("unknown log mode %s", w.LogMode)
+	}
+	if w.LogMode != curMode {
+		w.Logger.SetMode(curMode)
 	}
 
 	return len(p), nil

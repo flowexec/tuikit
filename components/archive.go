@@ -76,7 +76,7 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
-		v.height = msg.Height
+		v.height = msg.Height - (styles.HeaderHeight + styles.FooterHeight)
 		v.model.SetSize(v.width, v.height)
 	case TickMsg:
 		if v.activeEntry != nil {
@@ -173,7 +173,7 @@ func (v *LogArchiveView) View() string {
 }
 
 func (v *LogArchiveView) HelpMsg() string {
-	return "enter: select • /: filter | d: delete selected • x: delete all"
+	return "[ enter: select ] [ /: filter ] • [ d: delete selected ] [ x: delete all ]"
 }
 
 func (v *LogArchiveView) Interactive() bool {

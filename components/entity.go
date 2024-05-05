@@ -60,7 +60,7 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.viewport.Width = msg.Width
-		v.viewport.Height = msg.Height
+		v.viewport.Height = msg.Height - (styles.HeaderHeight + styles.FooterHeight)
 		v.viewport.SetContent(v.renderedContent())
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -125,8 +125,13 @@ func (v *EntityView) renderedContent() string {
 		content = "no data"
 	}
 
+	mdStyles, err := v.styles.MarkdownStyleJSON()
+	if err != nil {
+		v.err = NewErrorView(err, v.styles)
+		return v.err.View()
+	}
 	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStylesFromJSONBytes([]byte(v.styles.MarkdownStyleJSON)),
+		glamour.WithStylesFromJSONBytes([]byte(mdStyles)),
 		glamour.WithWordWrap(v.width-2),
 	)
 	if err != nil {
@@ -151,7 +156,7 @@ func (v *EntityView) View() string {
 }
 
 func (v *EntityView) HelpMsg() string {
-	msg := "d: docs • y: yaml • j: json"
+	msg := "[ d: docs ] [ y: yaml ] [ j: json ]"
 
 	var extendedHelp string
 	for i, cb := range v.callbacks {
@@ -159,13 +164,13 @@ func (v *EntityView) HelpMsg() string {
 		case cb.Key == "" || cb.Label == "":
 			continue
 		case i == 0:
-			extendedHelp += fmt.Sprintf("%s: %s", cb.Key, cb.Label)
+			extendedHelp += fmt.Sprintf("[ %s: %s ]", cb.Key, cb.Label)
 		default:
-			extendedHelp += fmt.Sprintf(" • %s: %s", cb.Key, cb.Label)
+			extendedHelp += fmt.Sprintf(" [ %s: %s ]", cb.Key, cb.Label)
 		}
 	}
 	if extendedHelp != "" {
-		msg = fmt.Sprintf("%s | %s", extendedHelp, msg)
+		msg = fmt.Sprintf("%s • %s", extendedHelp, msg)
 	}
 	return msg
 }

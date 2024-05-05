@@ -45,6 +45,8 @@ func NewCollectionView(
 	})
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles = state.Theme.ListItemStyles()
+	delegate.ShowDescription = false
+	delegate.SetSpacing(0)
 
 	model := list.New(items, delegate, state.Width, state.Height)
 	model.SetShowTitle(false)
@@ -78,7 +80,7 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
-		v.height = msg.Height
+		v.height = msg.Height - (styles.HeaderHeight + styles.FooterHeight)
 		v.model.SetSize(v.width, v.height)
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -177,8 +179,13 @@ func (v *CollectionView) renderedContent() string {
 		return content
 	}
 
+	mdStyles, err := v.styles.MarkdownStyleJSON()
+	if err != nil {
+		v.err = NewErrorView(err, v.styles)
+		return v.err.View()
+	}
 	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStylesFromJSONBytes([]byte(v.styles.MarkdownStyleJSON)),
+		glamour.WithStylesFromJSONBytes([]byte(mdStyles)),
 		glamour.WithWordWrap(v.width-2),
 	)
 	if err != nil {
@@ -205,19 +212,23 @@ func (v *CollectionView) View() string {
 func (v *CollectionView) HelpMsg() string {
 	var selectHelp string
 	if v.selectedFunc != nil {
-		selectHelp = "enter: select • "
+		selectHelp = "[ enter: select ] "
 	}
-	msg := fmt.Sprintf("%s/: filter | d: docs • y: yaml • j: json", selectHelp)
+	msg := fmt.Sprintf("%s[ /: filter ] [ d: docs ] [ y: yaml ] [ j: json ]", selectHelp)
 
 	var extendedHelp string
-	for _, cb := range v.callbacks {
-		if cb.Key == "" || cb.Label == "" {
+	for i, cb := range v.callbacks {
+		switch {
+		case cb.Key == "" || cb.Label == "":
 			continue
+		case i == 0:
+			extendedHelp += fmt.Sprintf("[ %s: %s ]", cb.Key, cb.Label)
+		default:
+			extendedHelp += fmt.Sprintf(" [ %s: %s ]", cb.Key, cb.Label)
 		}
-		extendedHelp += fmt.Sprintf(" • %s: %s", cb.Key, cb.Label)
 	}
 	if extendedHelp != "" {
-		msg = fmt.Sprintf("%s | %s", extendedHelp, msg)
+		msg = fmt.Sprintf("%s ● %s", extendedHelp, msg)
 	}
 	return msg
 }

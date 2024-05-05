@@ -1,40 +1,43 @@
 package components
 
 import (
-	"math"
 	"os"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/term"
 
 	"github.com/jahvon/tuikit/styles"
 )
 
 type MarkdownView struct {
-	content       string
-	viewport      viewport.Model
-	err           TeaModel
-	styles        styles.Theme
-	width, height int
+	appName, ctxKey, ctxValue string
+	content                   string
+	viewport                  viewport.Model
+	err                       TeaModel
+	styles                    styles.Theme
+	width, height             int
 }
 
-func RunMarkdownView(theme styles.Theme, content string) error {
+func RunMarkdownView(theme styles.Theme, appName, ctxKey, ctxValue, content string) error {
 	w, h, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
 		return err
 	}
-	w = int(math.Floor(float64(w) * 0.90))
-	vp := viewport.New(w, h)
-	vp.Style = theme.EntityView().Width(w).Height(h)
 	view := &MarkdownView{
+		appName:  appName,
+		ctxKey:   ctxKey,
+		ctxValue: ctxValue,
 		content:  content,
 		styles:   theme,
 		width:    w,
-		height:   h,
-		viewport: vp,
+		height:   h - styles.FooterHeight,
 	}
+	vp := viewport.New(view.width, view.height)
+	vp.Style = theme.EntityView().Width(w).Height(h)
+	view.viewport = vp
 	p := tea.NewProgram(view, tea.WithAltScreen())
 	_, err = p.Run()
 	return err
@@ -48,7 +51,12 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if v.err != nil {
 		return v.err.Update(msg)
 	}
-	switch msg := msg.(type) { //nolint:gocritic
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		v.width = msg.Width
+		v.height = msg.Height - styles.FooterHeight - styles.HeaderHeight
+		v.viewport.Width = v.width
+		v.viewport.Height = v.height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -65,11 +73,16 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (v *MarkdownView) View() string {
+	mdStyles, err := v.styles.MarkdownStyleJSON()
+	if err != nil {
+		v.err = NewErrorView(err, v.styles)
+		return v.err.View()
+	}
 	if v.err != nil {
 		return v.err.View()
 	}
 	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStylesFromJSONBytes([]byte(v.styles.MarkdownStyleJSON)),
+		glamour.WithStylesFromJSONBytes([]byte(mdStyles)),
 		glamour.WithWordWrap(v.width-2),
 	)
 	if err != nil {
@@ -83,8 +96,9 @@ func (v *MarkdownView) View() string {
 		return v.err.View()
 	}
 	v.viewport.SetContent(viewStr)
-	help := v.styles.RenderHelp("\nq: quit • ↑/↓: navigate")
-	return v.viewport.View() + help
+	header := v.styles.RenderHeader(v.appName, v.ctxKey, v.ctxValue, v.width)
+	footer := v.styles.RenderFooter("[ q: quit ] [ ↑/↓: navigate ]", v.width)
+	return lipgloss.JoinVertical(lipgloss.Top, header, v.viewport.View(), footer)
 }
 
 func (v *MarkdownView) RunProgram() error {

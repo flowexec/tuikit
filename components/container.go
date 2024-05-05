@@ -3,24 +3,20 @@ package components
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/jahvon/tuikit/styles"
 )
 
-const (
-	heightPadding = 5
-)
-
 type ContainerView struct {
-	appName string
-	ctx     context.Context
+	appName, headerCtxKey, headerCtxVal string
+	footerNotice                        string
+	ctx                                 context.Context
 
 	program     *tea.Program
-	header      Header
 	pendingView TeaModel
 	activeView  TeaModel
 	lastView    TeaModel
@@ -28,21 +24,23 @@ type ContainerView struct {
 
 	width, height int
 	ready         bool
+	showHelp      bool
 }
 
 func InitalizeContainer(
 	ctx context.Context,
 	cancel context.CancelFunc,
-	header Header,
+	appName, headerCtxKey, headerCtxVal string,
 	styles styles.Theme,
 ) *ContainerView {
 	activeView := NewLoadingView("", styles)
 	a := &ContainerView{
-		appName:    header.Name,
-		ctx:        ctx,
-		header:     header,
-		styles:     styles,
-		activeView: activeView,
+		appName:      appName,
+		headerCtxKey: headerCtxKey,
+		headerCtxVal: headerCtxVal,
+		ctx:          ctx,
+		styles:       styles,
+		activeView:   activeView,
 	}
 	prgm := tea.NewProgram(a, tea.WithContext(ctx))
 	go func() {
@@ -87,10 +85,8 @@ func (a *ContainerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, tea.Quit
 	case tea.WindowSizeMsg:
 		a.ready = true
-		msg.Width = int(math.Floor(float64(msg.Width) * 0.90))
 		a.width = msg.Width
-		msg.Height -= heightPadding
-		a.height = msg.Height
+		a.height = msg.Height - (styles.HeaderHeight + styles.FooterHeight)
 		if a.pendingView != nil {
 			a.activeView = a.pendingView
 			a.pendingView = nil
@@ -109,6 +105,8 @@ func (a *ContainerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.lastView = nil
 				return a, nil
 			}
+		case "h":
+			a.showHelp = !a.showHelp
 		}
 	case TickMsg:
 		cmds = append(cmds, tea.Tick(time.Second, func(t time.Time) tea.Msg {
@@ -127,10 +125,6 @@ func (a *ContainerView) Ready() bool {
 	return a.ready
 }
 
-func (a *ContainerView) Finalize() {
-	a.header.Notice = ""
-}
-
 func (a *ContainerView) Height() int {
 	return a.height
 }
@@ -140,34 +134,51 @@ func (a *ContainerView) Width() int {
 }
 
 func (a *ContainerView) View() string {
-	var help string
-	var lastViewHelp string
+	var footer string
+	var footerPrefix string
 
 	if !a.Ready() && a.activeView.Type() != LoadingViewType {
 		a.activeView = NewLoadingView("", a.styles)
 	}
-	if a.activeView.Interactive() && a.lastView != nil {
-		lastViewHelp = "esc: back • "
-	}
-	if a.activeView.Interactive() && a.activeView.HelpMsg() != "" {
-		help = a.styles.RenderHelp(fmt.Sprintf("\n %s | %sq: quit • ↑/↓: navigate", a.activeView.HelpMsg(), lastViewHelp))
-	} else if a.activeView.Interactive() {
-		help = a.styles.RenderHelp(fmt.Sprintf("\n %sq: quit • ↑/↓: navigate", lastViewHelp))
+	switch {
+	case !a.activeView.Interactive():
+		footer = a.styles.RenderFooter(a.footerNotice, a.width)
+	case a.showHelp:
+		footerPrefix = "[ q: quit] [ h: hide help ] [ ↑/↓: navigate ]"
+		if a.lastView != nil {
+			footerPrefix += " [ esc: back ]"
+		}
+		footer = a.styles.RenderFooter(fmt.Sprintf("%s ● %s", footerPrefix, a.activeView.HelpMsg()), a.width)
+	case !a.showHelp && a.activeView.HelpMsg() != "":
+		footerPrefix = "[ q: quit] [ h: show help ]"
+		if a.footerNotice != "" {
+			footer = a.styles.RenderFooter(
+				fmt.Sprintf("%s ● %s ● %s", footerPrefix, a.activeView.HelpMsg(), a.footerNotice), a.width,
+			)
+		} else {
+			footer = a.styles.RenderFooter(footerPrefix, a.width)
+		}
+	case !a.showHelp && a.activeView.HelpMsg() == "":
+		footerPrefix = "[ q: quit]"
+		if a.footerNotice != "" {
+			footer = a.styles.RenderFooter(fmt.Sprintf("%s ● %s", footerPrefix, a.footerNotice), a.width)
+		} else {
+			footer = a.styles.RenderFooter(footerPrefix, a.width)
+		}
 	}
 
-	header := a.header.View()
-	return header + "\n" + a.activeView.View() + help
+	header := a.styles.RenderHeader(a.appName, a.headerCtxKey, a.headerCtxVal, a.width)
+	return lipgloss.JoinVertical(lipgloss.Top, header, a.activeView.View(), footer)
 }
 
 func (a *ContainerView) SetContext(ctx string) {
-	if ctx != "" {
-		a.header.CtxVal = ctx
+	if ctx != "" && a.headerCtxKey != "" {
+		a.headerCtxVal = ctx
 	}
 }
 
-func (a *ContainerView) SetNotice(notice string, lvl NoticeLevel) {
-	a.header.Notice = notice
-	a.header.NoticeLevel = lvl
+func (a *ContainerView) SetNotice(notice string, lvl styles.NoticeLevel) {
+	a.footerNotice = a.styles.RenderNotice(notice, lvl)
 }
 
 func (a *ContainerView) SetView(model TeaModel) {
@@ -180,7 +191,9 @@ func (a *ContainerView) SetView(model TeaModel) {
 	}
 	a.activeView = model
 	cmd := a.activeView.Init()
-	a.program.Send(cmd)
+	if cmd != nil {
+		a.program.Send(cmd)
+	}
 }
 
 func (a *ContainerView) HandleError(err error) {

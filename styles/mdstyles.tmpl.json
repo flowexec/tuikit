@@ -1,0 +1,123 @@
+{
+  "document": {
+    "block_suffix": "\n",
+    "color": "{{ .BodyColor }}",
+    "margin": 1
+  },
+  "block_quote": {
+    "color": "{{ .QuoteColor }}",
+    "italic": true,
+    "indent": 1,
+    "indent_token": "| "
+  },
+  "paragraph": {
+    "color": "{{ .BodyColor }}",
+    "block_suffix": "\n"
+  },
+  "heading": {
+    "block_suffix": "\n",
+    "color": "{{ .HeadingColor }}",
+    "bold": true
+  },
+  "h1": {
+    "prefix": " ",
+    "suffix": " ",
+    "color": "{{ .DarkFgColor }}",
+    "background_color": "{{ .HeadingColor }}"
+  },
+  "h2": {
+    "prefix": "",
+    "color": "{{ .HeadingColor }}"
+  },
+  "h3": {
+    "prefix": "> ",
+    "color": "{{ .HeadingColor }}"
+  },
+  "h4": {
+    "prefix": ">> ",
+    "color": "{{ .SmallHeadingColor }}"
+  },
+  "h5": {
+    "prefix": ">>> ",
+    "color": "{{ .SmallHeadingColor }}"
+  },
+  "h6": {
+    "prefix": ">>> ",
+    "color": "{{ .SmallHeadingColor }}"
+  },
+  "text": {},
+  "strikethrough": {
+    "color": "{{ .BodyColor }}",
+    "crossed_out": true
+  },
+  "emph": {
+    "color": "{{ .BodyColor }}",
+    "italic": true
+  },
+  "strong": {
+    "color": "{{ .BodyColor }}",
+    "bold": true
+  },
+  "hr": {
+    "color": "{{ .DividerColor }}",
+    "format": "\n--------\n"
+  },
+  "list": {
+    "color": "{{ .ItemColor }}",
+    "level_indent": 2
+  },
+  "item": {
+    "block_prefix": "‣ "
+  },
+  "enumeration": {
+    "block_prefix": ". ",
+    "color": "{{ .ItemColor }}"
+  },
+  "task": {
+    "ticked": "[✔] ",
+    "unticked": "[ ] ",
+    "color": "{{ .ItemColor }}"
+  },
+  "link": {
+    "color": "{{ .LinkColor }}",
+    "block_prefix": "[ 🔗 ",
+    "block_suffix": " ]",
+    "underline": true
+  },
+  "link_text": {
+    "color": "{{ .LinkColor }}"
+  },
+  "image": {
+    "color": "{{ .LinkColor }}",
+    "block_prefix": "[ 🖼️ ",
+    "block_suffix": " ]",
+    "underline": true
+  },
+  "image_text": {
+    "color": "{{ .LinkColor }}"
+  },
+  "code": {
+    "color": "{{ .CodeTextColor }}",
+    "background_color": "{{ .CodeBgColor }}"
+  },
+  "code_block": {
+    "color": "{{ .CodeTextColor }}",
+    "background_color": "{{ .CodeBgColor }}",
+    "theme": "{{ .ChromaTheme }}",
+    "indent": 1,
+    "indent_token": "| "
+  },
+  "table": {
+    "color": "{{ .DividerColor }}",
+    "center_separator": "┼",
+    "column_separator": "│",
+    "row_separator": "─"
+  },
+  "definition_list": {},
+  "definition_term": {},
+  "definition_description": {
+    "block_prefix": "\n🠶 "
+  },
+  "html_block": {},
+  "html_span": {}
+}

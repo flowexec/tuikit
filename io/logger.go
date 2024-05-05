@@ -15,21 +15,15 @@ type StandardLogger struct {
 	stdOutHandler  *log.Logger
 	archiveHandler *log.Logger
 	style          styles.Theme
+	mode           LogMode
 	archiveDir     string
 	archiveFile    *os.File
 }
 
-func NewLogger(style styles.Theme, archiveDir string) *StandardLogger {
-	logger := &StandardLogger{style: style}
-	stdOutHandler := log.NewWithOptions(
-		os.Stdout,
-		log.Options{
-			ReportTimestamp: true,
-			ReportCaller:    false,
-			Level:           log.InfoLevel,
-		},
-	)
-	applyHumanReadableFormat(stdOutHandler, style)
+func NewLogger(style styles.Theme, mode LogMode, archiveDir string) *StandardLogger {
+	logger := &StandardLogger{style: style, mode: mode, archiveDir: archiveDir}
+	stdOutHandler := log.NewWithOptions(os.Stdout, log.Options{Level: log.InfoLevel, ReportCaller: false})
+	applyHumanReadableFormat(stdOutHandler, style, mode)
 	logger.stdOutHandler = stdOutHandler
 
 	if archiveDir != "" {
@@ -51,12 +45,32 @@ func NewLogger(style styles.Theme, archiveDir string) *StandardLogger {
 	return logger
 }
 
-func applyHumanReadableFormat(handler *log.Logger, style styles.Theme) {
-	if style.UsePlainTextLogger {
-		handler.SetFormatter(log.TextFormatter)
-	} else {
+func (l *StandardLogger) SetMode(mode LogMode) {
+	if mode == "" {
+		mode = Text
+	}
+	l.mode = mode
+}
+
+func (l *StandardLogger) LogMode() LogMode {
+	return l.mode
+}
+
+func applyHumanReadableFormat(handler *log.Logger, style styles.Theme, mode LogMode) {
+	switch mode {
+	case JSON:
+		handler.SetFormatter(log.JSONFormatter)
+		handler.SetReportTimestamp(true)
+		handler.SetTimeFormat(time.RFC822)
+	case Logfmt:
 		handler.SetFormatter(log.LogfmtFormatter)
+		handler.SetReportTimestamp(true)
 		handler.SetTimeFormat(time.Kitchen)
+	case Text, Hidden:
+		fallthrough
+	default:
+		handler.SetFormatter(log.TextFormatter)
+		handler.SetReportTimestamp(false)
 	}
 	handler.SetStyles(style.LoggerStyles())
 	handler.SetColorProfile(termenv.ColorProfile())
@@ -96,48 +110,14 @@ func (l *StandardLogger) Println(data string) {
 	}
 }
 
-func (l *StandardLogger) AsPlainText(exec func()) {
-	if l.style.UsePlainTextLogger {
-		exec()
-		return
-	}
-
-	l.stdOutHandler.SetFormatter(log.TextFormatter)
-	if l.archiveHandler != nil {
-		l.archiveHandler.SetFormatter(log.TextFormatter)
-	}
-
-	exec()
-
-	l.stdOutHandler.SetFormatter(log.LogfmtFormatter)
-	if l.archiveHandler != nil {
-		l.archiveHandler.SetFormatter(log.LogfmtFormatter)
-	}
-}
-
-func (l *StandardLogger) AsLogfmt(exec func()) {
-	if !l.style.UsePlainTextLogger {
-		exec()
-		return
-	}
-	l.stdOutHandler.SetFormatter(log.LogfmtFormatter)
-	exec()
-	l.stdOutHandler.SetFormatter(log.TextFormatter)
-}
-
-func (l *StandardLogger) AsJSON(exec func()) {
-	var formatter log.Formatter
-	if l.style.UsePlainTextLogger {
-		formatter = log.TextFormatter
-	} else {
-		formatter = log.LogfmtFormatter
-	}
-	l.stdOutHandler.SetFormatter(log.JSONFormatter)
-	exec()
-	l.stdOutHandler.SetFormatter(formatter)
-}
-
 func (l *StandardLogger) Infof(msg string, args ...any) {
+	l.syncLoggerFormat()
+	if l.mode == Text {
+		l.PlainTextInfo(fmt.Sprintf(msg, args...))
+		return
+	} else if l.mode == Hidden {
+		return
+	}
 	l.stdOutHandler.Infof(msg, args...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Infof(msg, args...)
@@ -145,6 +125,13 @@ func (l *StandardLogger) Infof(msg string, args ...any) {
 }
 
 func (l *StandardLogger) Debugf(msg string, args ...any) {
+	l.syncLoggerFormat()
+	if l.mode == Text {
+		l.PlainTextDebug(fmt.Sprintf(msg, args...))
+		return
+	} else if l.mode == Hidden {
+		return
+	}
 	l.stdOutHandler.Debugf(msg, args...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Debugf(msg, args...)
@@ -155,11 +142,20 @@ func (l *StandardLogger) Error(err error, msg string) {
 	if msg == "" {
 		l.Errorf(err.Error())
 		return
+	} else if l.mode == Hidden {
+		return
 	}
 	l.Errorx(err.Error(), "err", err)
 }
 
 func (l *StandardLogger) Errorf(msg string, args ...any) {
+	l.syncLoggerFormat()
+	if l.mode == Text {
+		l.PlainTextError(fmt.Sprintf(msg, args...))
+		return
+	} else if l.mode == Hidden {
+		return
+	}
 	l.stdOutHandler.Errorf(msg, args...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Errorf(msg, args...)
@@ -167,6 +163,13 @@ func (l *StandardLogger) Errorf(msg string, args ...any) {
 }
 
 func (l *StandardLogger) Warnf(msg string, args ...any) {
+	l.syncLoggerFormat()
+	if l.mode == Text {
+		l.PlainTextWarn(fmt.Sprintf(msg, args...))
+		return
+	} else if l.mode == Hidden {
+		return
+	}
 	l.stdOutHandler.Warnf(msg, args...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Warnf(msg, args...)
@@ -178,6 +181,13 @@ func (l *StandardLogger) FatalErr(err error) {
 }
 
 func (l *StandardLogger) Fatalf(msg string, args ...any) {
+	l.syncLoggerFormat()
+	if l.mode == Text {
+		l.PlainTextError(fmt.Sprintf(msg, args...))
+		os.Exit(1)
+	} else if l.mode == Hidden {
+		return
+	}
 	if l.archiveHandler != nil {
 		l.archiveHandler.Errorf(msg, args...)
 	}
@@ -185,6 +195,10 @@ func (l *StandardLogger) Fatalf(msg string, args ...any) {
 }
 
 func (l *StandardLogger) Infox(msg string, kv ...any) {
+	l.syncLoggerFormat()
+	if l.mode == Hidden {
+		return
+	}
 	l.stdOutHandler.Info(msg, kv...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Info(msg, kv...)
@@ -192,6 +206,10 @@ func (l *StandardLogger) Infox(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) Debugx(msg string, kv ...any) {
+	if l.mode == Hidden {
+		return
+	}
+	l.syncLoggerFormat()
 	l.stdOutHandler.Debug(msg, kv...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Debug(msg, kv...)
@@ -199,6 +217,10 @@ func (l *StandardLogger) Debugx(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) Errorx(msg string, kv ...any) {
+	if l.mode == Hidden {
+		return
+	}
+	l.syncLoggerFormat()
 	l.stdOutHandler.Error(msg, kv...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Error(msg, kv...)
@@ -206,6 +228,10 @@ func (l *StandardLogger) Errorx(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) Warnx(msg string, kv ...any) {
+	if l.mode == Hidden {
+		return
+	}
+	l.syncLoggerFormat()
 	l.stdOutHandler.Warn(msg, kv...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Warn(msg, kv...)
@@ -213,6 +239,7 @@ func (l *StandardLogger) Warnx(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) Fatalx(msg string, kv ...any) {
+	l.syncLoggerFormat()
 	if l.archiveHandler != nil {
 		l.archiveHandler.Error(msg, kv...)
 	}
@@ -220,6 +247,9 @@ func (l *StandardLogger) Fatalx(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) PlainTextInfo(msg string) {
+	if l.stdOutHandler.GetLevel() > log.InfoLevel {
+		return
+	}
 	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderInfo(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
@@ -227,7 +257,40 @@ func (l *StandardLogger) PlainTextInfo(msg string) {
 }
 
 func (l *StandardLogger) PlainTextSuccess(msg string) {
+	if l.stdOutHandler.GetLevel() > log.InfoLevel {
+		return
+	}
 	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderSuccess(msg))
+	if l.archiveFile != nil {
+		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	}
+}
+
+func (l *StandardLogger) PlainTextError(msg string) {
+	if l.stdOutHandler.GetLevel() > log.InfoLevel {
+		return
+	}
+	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderError(msg))
+	if l.archiveFile != nil {
+		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	}
+}
+
+func (l *StandardLogger) PlainTextWarn(msg string) {
+	if l.stdOutHandler.GetLevel() > log.InfoLevel {
+		return
+	}
+	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderWarning(msg))
+	if l.archiveFile != nil {
+		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	}
+}
+
+func (l *StandardLogger) PlainTextDebug(msg string) {
+	if l.stdOutHandler.GetLevel() > log.DebugLevel {
+		return
+	}
+	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderEmphasis(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
@@ -250,30 +313,15 @@ func (l *StandardLogger) Flush() error {
 	return nil
 }
 
-//go:generate mockgen -destination=mocks/mock_logger.go -package=mocks . Logger
-type Logger interface {
-	Flush() error
-	SetLevel(level int)
-
-	PlainTextInfo(msg string)
-	PlainTextSuccess(msg string)
-	AsPlainText(exec func())
-	AsLogfmt(exec func())
-	AsJSON(exec func())
-
-	Infof(msg string, args ...any)
-	Debugf(msg string, args ...any)
-	Error(err error, msg string)
-	Errorf(msg string, args ...any)
-	Warnf(msg string, args ...any)
-	Fatalf(msg string, args ...any)
-
-	Infox(msg string, kv ...any)
-	Debugx(msg string, kv ...any)
-	Errorx(msg string, kv ...any)
-	Warnx(msg string, kv ...any)
-	Fatalx(msg string, kv ...any)
-
-	Println(data string)
-	FatalErr(err error)
+func (l *StandardLogger) syncLoggerFormat() {
+	switch l.mode {
+	case JSON:
+		l.stdOutHandler.SetFormatter(log.JSONFormatter)
+	case Logfmt:
+		l.stdOutHandler.SetFormatter(log.LogfmtFormatter)
+	case Text, "":
+		l.stdOutHandler.SetFormatter(log.TextFormatter)
+	case Hidden:
+		return
+	}
 }

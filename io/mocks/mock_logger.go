@@ -12,6 +12,7 @@ package mocks
 import (
 	reflect "reflect"
 
+	io "github.com/jahvon/tuikit/io"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -36,42 +37,6 @@ func NewMockLogger(ctrl *gomock.Controller) *MockLogger {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockLogger) EXPECT() *MockLoggerMockRecorder {
 	return m.recorder
-}
-
-// AsJSON mocks base method.
-func (m *MockLogger) AsJSON(arg0 func()) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AsJSON", arg0)
-}
-
-// AsJSON indicates an expected call of AsJSON.
-func (mr *MockLoggerMockRecorder) AsJSON(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsJSON", reflect.TypeOf((*MockLogger)(nil).AsJSON), arg0)
-}
-
-// AsLogfmt mocks base method.
-func (m *MockLogger) AsLogfmt(arg0 func()) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AsLogfmt", arg0)
-}
-
-// AsLogfmt indicates an expected call of AsLogfmt.
-func (mr *MockLoggerMockRecorder) AsLogfmt(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsLogfmt", reflect.TypeOf((*MockLogger)(nil).AsLogfmt), arg0)
-}
-
-// AsPlainText mocks base method.
-func (m *MockLogger) AsPlainText(arg0 func()) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AsPlainText", arg0)
-}
-
-// AsPlainText indicates an expected call of AsPlainText.
-func (mr *MockLoggerMockRecorder) AsPlainText(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsPlainText", reflect.TypeOf((*MockLogger)(nil).AsPlainText), arg0)
 }
 
 // Debugf mocks base method.
@@ -248,6 +213,44 @@ func (mr *MockLoggerMockRecorder) Infox(arg0 any, arg1 ...any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Infox", reflect.TypeOf((*MockLogger)(nil).Infox), varargs...)
 }
 
+// LogMode mocks base method.
+func (m *MockLogger) LogMode() io.LogMode {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LogMode")
+	ret0, _ := ret[0].(io.LogMode)
+	return ret0
+}
+
+// LogMode indicates an expected call of LogMode.
+func (mr *MockLoggerMockRecorder) LogMode() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogMode", reflect.TypeOf((*MockLogger)(nil).LogMode))
+}
+
+// PlainTextDebug mocks base method.
+func (m *MockLogger) PlainTextDebug(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "PlainTextDebug", arg0)
+}
+
+// PlainTextDebug indicates an expected call of PlainTextDebug.
+func (mr *MockLoggerMockRecorder) PlainTextDebug(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlainTextDebug", reflect.TypeOf((*MockLogger)(nil).PlainTextDebug), arg0)
+}
+
+// PlainTextError mocks base method.
+func (m *MockLogger) PlainTextError(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "PlainTextError", arg0)
+}
+
+// PlainTextError indicates an expected call of PlainTextError.
+func (mr *MockLoggerMockRecorder) PlainTextError(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlainTextError", reflect.TypeOf((*MockLogger)(nil).PlainTextError), arg0)
+}
+
 // PlainTextInfo mocks base method.
 func (m *MockLogger) PlainTextInfo(arg0 string) {
 	m.ctrl.T.Helper()
@@ -272,6 +275,18 @@ func (mr *MockLoggerMockRecorder) PlainTextSuccess(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlainTextSuccess", reflect.TypeOf((*MockLogger)(nil).PlainTextSuccess), arg0)
 }
 
+// PlainTextWarn mocks base method.
+func (m *MockLogger) PlainTextWarn(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "PlainTextWarn", arg0)
+}
+
+// PlainTextWarn indicates an expected call of PlainTextWarn.
+func (mr *MockLoggerMockRecorder) PlainTextWarn(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlainTextWarn", reflect.TypeOf((*MockLogger)(nil).PlainTextWarn), arg0)
+}
+
 // Println mocks base method.
 func (m *MockLogger) Println(arg0 string) {
 	m.ctrl.T.Helper()
@@ -294,6 +309,18 @@ func (m *MockLogger) SetLevel(arg0 int) {
 func (mr *MockLoggerMockRecorder) SetLevel(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLevel", reflect.TypeOf((*MockLogger)(nil).SetLevel), arg0)
+}
+
+// SetMode mocks base method.
+func (m *MockLogger) SetMode(arg0 io.LogMode) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetMode", arg0)
+}
+
+// SetMode indicates an expected call of SetMode.
+func (mr *MockLoggerMockRecorder) SetMode(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMode", reflect.TypeOf((*MockLogger)(nil).SetMode), arg0)
 }
 
 // Warnf mocks base method.

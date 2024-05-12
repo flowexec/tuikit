@@ -18,11 +18,12 @@ type StandardLogger struct {
 	mode           LogMode
 	archiveDir     string
 	archiveFile    *os.File
+	stdOutFile     *os.File
 }
 
-func NewLogger(style styles.Theme, mode LogMode, archiveDir string) *StandardLogger {
-	logger := &StandardLogger{style: style, mode: mode, archiveDir: archiveDir}
-	stdOutHandler := log.NewWithOptions(os.Stdout, log.Options{Level: log.InfoLevel, ReportCaller: false})
+func NewLogger(stdOut *os.File, style styles.Theme, mode LogMode, archiveDir string) *StandardLogger {
+	logger := &StandardLogger{style: style, mode: mode, archiveDir: archiveDir, stdOutFile: stdOut}
+	stdOutHandler := log.NewWithOptions(stdOut, log.Options{Level: log.InfoLevel, ReportCaller: false})
 	applyHumanReadableFormat(stdOutHandler, style, mode)
 	logger.stdOutHandler = stdOutHandler
 
@@ -101,7 +102,7 @@ func (l *StandardLogger) SetLevel(level int) {
 }
 
 func (l *StandardLogger) Println(data string) {
-	_, err := fmt.Fprintln(os.Stdout, data)
+	_, err := fmt.Fprintln(l.stdOutFile, data)
 	if err != nil {
 		panic(err)
 	}
@@ -250,7 +251,7 @@ func (l *StandardLogger) PlainTextInfo(msg string) {
 	if l.stdOutHandler.GetLevel() > log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderInfo(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderInfo(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
@@ -260,7 +261,7 @@ func (l *StandardLogger) PlainTextSuccess(msg string) {
 	if l.stdOutHandler.GetLevel() > log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderSuccess(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderSuccess(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
@@ -270,7 +271,7 @@ func (l *StandardLogger) PlainTextError(msg string) {
 	if l.stdOutHandler.GetLevel() > log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderError(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderError(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
@@ -280,7 +281,7 @@ func (l *StandardLogger) PlainTextWarn(msg string) {
 	if l.stdOutHandler.GetLevel() > log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderWarning(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderWarning(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
@@ -290,7 +291,7 @@ func (l *StandardLogger) PlainTextDebug(msg string) {
 	if l.stdOutHandler.GetLevel() > log.DebugLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(os.Stdout, l.style.RenderEmphasis(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderEmphasis(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}

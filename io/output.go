@@ -15,24 +15,18 @@ func (w StdOutWriter) Write(p []byte) (n int, err error) {
 	if strings.TrimSpace(string(p)) == "" {
 		return len(p), nil
 	}
-	endsWithNewline := strings.HasSuffix(string(p), "\n")
 	splitP := strings.Split(string(p), "\n")
 
 	curMode := w.Logger.LogMode()
 	if w.LogMode != nil && (*w.LogMode != "" && *w.LogMode != curMode) {
 		w.Logger.SetMode(*w.LogMode)
 	}
-	for i, line := range splitP {
+	for _, line := range splitP {
 		switch w.Logger.LogMode() {
 		case Hidden:
 			return len(p), nil
 		case Text:
-			// Maintain the newline at the end of the log message
-			if i+1 == len(splitP) && endsWithNewline {
-				w.Logger.Println(line)
-			} else {
-				w.Logger.Print(line)
-			}
+			w.Logger.Println(line)
 		case JSON, Logfmt:
 			if len(w.LogFields) > 0 {
 				w.Logger.Infox(line, w.LogFields...)
@@ -60,24 +54,18 @@ func (w StdErrWriter) Write(p []byte) (n int, err error) {
 	if strings.TrimSpace(string(p)) == "" {
 		return len(p), nil
 	}
-	endsWithNewline := strings.HasSuffix(string(p), "\n")
 	splitP := strings.Split(string(p), "\n")
 
 	curMode := w.Logger.LogMode()
 	if w.LogMode != nil && (*w.LogMode != "" && *w.LogMode != curMode) {
 		w.Logger.SetMode(*w.LogMode)
 	}
-	for i, line := range splitP {
+	for _, line := range splitP {
 		switch w.Logger.LogMode() {
 		case Hidden:
 			return len(p), nil
 		case Text:
-			// Maintain the newline at the end of the log message
-			if i == len(splitP)-1 && endsWithNewline {
-				w.Logger.PlainTextError(line + "\n")
-			} else {
-				w.Logger.PlainTextError(line)
-			}
+			w.Logger.PlainTextError(line)
 		case JSON, Logfmt:
 			if len(w.LogFields) > 0 {
 				w.Logger.Errorx(line, w.LogFields...)

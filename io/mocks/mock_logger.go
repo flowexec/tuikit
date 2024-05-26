@@ -287,6 +287,18 @@ func (mr *MockLoggerMockRecorder) PlainTextWarn(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlainTextWarn", reflect.TypeOf((*MockLogger)(nil).PlainTextWarn), arg0)
 }
 
+// Print mocks base method.
+func (m *MockLogger) Print(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Print", arg0)
+}
+
+// Print indicates an expected call of Print.
+func (mr *MockLoggerMockRecorder) Print(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Print", reflect.TypeOf((*MockLogger)(nil).Print), arg0)
+}
+
 // Println mocks base method.
 func (m *MockLogger) Println(arg0 string) {
 	m.ctrl.T.Helper()

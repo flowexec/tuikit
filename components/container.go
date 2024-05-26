@@ -141,6 +141,8 @@ func (a *ContainerView) View() string {
 		a.activeView = NewLoadingView("", a.styles)
 	}
 	switch {
+	case a.activeView.Type() == LoadingViewType:
+		footer = ""
 	case !a.activeView.Interactive():
 		footer = a.styles.RenderFooter(a.footerNotice, a.width)
 	case a.showHelp:

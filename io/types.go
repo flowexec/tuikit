@@ -46,6 +46,7 @@ type Logger interface {
 	Warnx(msg string, kv ...any)
 	Fatalx(msg string, kv ...any)
 
+	Print(data string)
 	Println(data string)
 	FatalErr(err error)
 }

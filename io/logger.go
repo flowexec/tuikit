@@ -48,37 +48,35 @@ func NewLogger(stdOut *os.File, style styles.Theme, mode LogMode, archiveDir str
 
 func (l *StandardLogger) SetMode(mode LogMode) {
 	if mode == "" {
-		mode = Text
+		return
 	}
 	l.mode = mode
+	applyHumanReadableFormat(l.stdOutHandler, l.style, mode)
 }
 
 func (l *StandardLogger) LogMode() LogMode {
+	if l.mode == "" {
+		return Text
+	}
 	return l.mode
 }
 
 func applyHumanReadableFormat(handler *log.Logger, style styles.Theme, mode LogMode) {
-	switch mode {
-	case JSON:
+	handler.SetReportTimestamp(true)
+	if mode == JSON {
 		handler.SetFormatter(log.JSONFormatter)
-		handler.SetReportTimestamp(true)
 		handler.SetTimeFormat(time.RFC822)
-	case Logfmt:
-		handler.SetFormatter(log.LogfmtFormatter)
-		handler.SetReportTimestamp(true)
-		handler.SetTimeFormat(time.Kitchen)
-	case Text, Hidden:
-		fallthrough
-	default:
-		handler.SetFormatter(log.TextFormatter)
-		handler.SetReportTimestamp(false)
+		return
 	}
-	handler.SetStyles(style.LoggerStyles())
+
+	handler.SetFormatter(log.TextFormatter)
+	handler.SetTimeFormat(time.Kitchen)
 	handler.SetColorProfile(termenv.ColorProfile())
+	handler.SetStyles(style.LoggerStyles())
 }
 
 func applyStorageFormat(handler *log.Logger) {
-	handler.SetFormatter(log.JSONFormatter)
+	handler.SetFormatter(log.LogfmtFormatter)
 	handler.SetTimeFormat(time.RFC822)
 	handler.SetStyles(log.DefaultStyles())
 }
@@ -98,6 +96,16 @@ func (l *StandardLogger) SetLevel(level int) {
 		l.stdOutHandler.SetLevel(log.DebugLevel)
 	default:
 		l.stdOutHandler.SetLevel(log.InfoLevel)
+	}
+}
+
+func (l *StandardLogger) Print(data string) {
+	_, err := fmt.Fprint(l.stdOutFile, data)
+	if err != nil {
+		panic(err)
+	}
+	if l.archiveFile != nil {
+		_, _ = fmt.Fprint(l.archiveFile, data)
 	}
 }
 
@@ -318,9 +326,7 @@ func (l *StandardLogger) syncLoggerFormat() {
 	switch l.mode {
 	case JSON:
 		l.stdOutHandler.SetFormatter(log.JSONFormatter)
-	case Logfmt:
-		l.stdOutHandler.SetFormatter(log.LogfmtFormatter)
-	case Text, "":
+	case Logfmt, Text, "":
 		l.stdOutHandler.SetFormatter(log.TextFormatter)
 	case Hidden:
 		return

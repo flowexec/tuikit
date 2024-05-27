@@ -6,6 +6,7 @@ type CollectionItem struct {
 	Header    string
 	SubHeader string
 	Desc      string
+	ID        string
 }
 
 func (i *CollectionItem) Title() string {
@@ -17,7 +18,7 @@ func (i *CollectionItem) Title() string {
 }
 
 func (i *CollectionItem) Description() string { return i.Desc }
-func (i *CollectionItem) FilterValue() string { return i.Header }
+func (i *CollectionItem) FilterValue() string { return i.ID }
 
 type Collection interface {
 	Items() []*CollectionItem

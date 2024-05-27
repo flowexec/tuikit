@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -132,7 +133,8 @@ func (v *EntityView) renderedContent() string {
 	}
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithStylesFromJSONBytes([]byte(mdStyles)),
-		glamour.WithWordWrap(v.width-2),
+		glamour.WithPreservedNewLines(),
+		glamour.WithWordWrap(int(math.Floor(float64(v.width)*0.95))),
 	)
 	if err != nil {
 		v.err = NewErrorView(err, v.styles)

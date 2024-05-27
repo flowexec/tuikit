@@ -3,6 +3,8 @@ package components
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,9 +24,9 @@ type ContainerView struct {
 	lastView    TeaModel
 	styles      styles.Theme
 
-	width, height int
-	ready         bool
-	showHelp      bool
+	width, height, fullHeight int
+	ready                     bool
+	showHelp                  bool
 }
 
 func InitalizeContainer(
@@ -44,10 +46,7 @@ func InitalizeContainer(
 	}
 	prgm := tea.NewProgram(a, tea.WithContext(ctx))
 	go func() {
-		var err error
-		if _, err = prgm.Run(); err != nil {
-			panic(fmt.Errorf("error running application: %w", err))
-		}
+		_, _ = prgm.Run()
 		cancel()
 	}()
 	readyTimout := time.Now().Add(10 * time.Second)
@@ -87,6 +86,7 @@ func (a *ContainerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.ready = true
 		a.width = msg.Width
 		a.height = msg.Height - (styles.HeaderHeight + styles.FooterHeight)
+		a.fullHeight = msg.Height
 		if a.pendingView != nil {
 			a.activeView = a.pendingView
 			a.pendingView = nil
@@ -106,6 +106,9 @@ func (a *ContainerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return a, nil
 			}
 		case "h":
+			if a.activeView.HelpMsg() == "" {
+				break
+			}
 			a.showHelp = !a.showHelp
 		}
 	case TickMsg:
@@ -141,6 +144,8 @@ func (a *ContainerView) View() string {
 		a.activeView = NewLoadingView("", a.styles)
 	}
 	switch {
+	case a.activeView.Type() == FrameViewType:
+		return a.activeView.View()
 	case a.activeView.Type() == LoadingViewType:
 		footer = ""
 	case !a.activeView.Interactive():
@@ -196,6 +201,10 @@ func (a *ContainerView) SetView(model TeaModel) {
 	if cmd != nil {
 		a.program.Send(cmd)
 	}
+
+	if a.width != 0 && a.height != 0 {
+		a.program.Send(tea.WindowSizeMsg{Width: a.width, Height: a.fullHeight})
+	}
 }
 
 func (a *ContainerView) HandleError(err error) {
@@ -204,4 +213,17 @@ func (a *ContainerView) HandleError(err error) {
 	}
 
 	a.SetView(NewErrorView(err, a.styles))
+}
+
+func (a *ContainerView) Shutdown() {
+	// exit the program
+	_ = a.program.ReleaseTerminal()
+	a.Update(tea.Quit())
+
+	// clear the screen
+	c := exec.Command("clear")
+	c.Stdout = os.Stdout
+	if err := c.Run(); err != nil {
+		panic("unable to clear screen")
+	}
 }

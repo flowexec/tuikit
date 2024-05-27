@@ -1,6 +1,7 @@
 package components
 
 import (
+	"math"
 	"os"
 
 	"github.com/charmbracelet/bubbles/viewport"
@@ -83,7 +84,8 @@ func (v *MarkdownView) View() string {
 	}
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithStylesFromJSONBytes([]byte(mdStyles)),
-		glamour.WithWordWrap(v.width-2),
+		glamour.WithPreservedNewLines(),
+		glamour.WithWordWrap(int(math.Floor(float64(v.width)*0.95))),
 	)
 	if err != nil {
 		v.err = NewErrorView(err, v.styles)

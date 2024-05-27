@@ -11,6 +11,7 @@ type StdOutWriter struct {
 	LogMode   *LogMode
 }
 
+//nolint:dupl // this is a slightly modified mirror of StdErrWriter
 func (w StdOutWriter) Write(p []byte) (n int, err error) {
 	if strings.TrimSpace(string(p)) == "" {
 		return len(p), nil
@@ -50,6 +51,7 @@ type StdErrWriter struct {
 	LogMode   *LogMode
 }
 
+//nolint:dupl // this is a slightly modified mirror of StdOutWriter
 func (w StdErrWriter) Write(p []byte) (n int, err error) {
 	if strings.TrimSpace(string(p)) == "" {
 		return len(p), nil

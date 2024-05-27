@@ -100,7 +100,7 @@ func (l *StandardLogger) SetLevel(level int) {
 }
 
 func (l *StandardLogger) Print(data string) {
-	_, err := fmt.Fprint(l.stdOutFile, data)
+	_, err := fmt.Fprint(l.stdOutFile, ""+data)
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +110,7 @@ func (l *StandardLogger) Print(data string) {
 }
 
 func (l *StandardLogger) Println(data string) {
-	_, err := fmt.Fprintln(l.stdOutFile, data)
+	_, err := fmt.Fprintln(l.stdOutFile, ""+data)
 	if err != nil {
 		panic(err)
 	}
@@ -259,7 +259,7 @@ func (l *StandardLogger) PlainTextInfo(msg string) {
 	if l.stdOutHandler.GetLevel() > log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderInfo(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderInfo(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
@@ -269,17 +269,14 @@ func (l *StandardLogger) PlainTextSuccess(msg string) {
 	if l.stdOutHandler.GetLevel() > log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderSuccess(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderSuccess(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
 }
 
 func (l *StandardLogger) PlainTextError(msg string) {
-	if l.stdOutHandler.GetLevel() > log.InfoLevel {
-		return
-	}
-	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderError(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderError(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
@@ -289,7 +286,7 @@ func (l *StandardLogger) PlainTextWarn(msg string) {
 	if l.stdOutHandler.GetLevel() > log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderWarning(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderWarning(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}
@@ -299,7 +296,7 @@ func (l *StandardLogger) PlainTextDebug(msg string) {
 	if l.stdOutHandler.GetLevel() > log.DebugLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(l.stdOutFile, l.style.RenderEmphasis(msg))
+	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderEmphasis(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}

@@ -132,6 +132,11 @@ func (a *ContainerView) Height() int {
 	return a.height
 }
 
+// FullHeight returns the full height of the terminal window including the header and footer
+func (a *ContainerView) FullHeight() int {
+	return a.fullHeight
+}
+
 func (a *ContainerView) Width() int {
 	return a.width
 }
@@ -200,10 +205,6 @@ func (a *ContainerView) SetView(model TeaModel) {
 	cmd := a.activeView.Init()
 	if cmd != nil {
 		a.program.Send(cmd)
-	}
-
-	if a.width != 0 && a.height != 0 {
-		a.program.Send(tea.WindowSizeMsg{Width: a.width, Height: a.fullHeight})
 	}
 }
 

@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jahvon/glamour"
 	"golang.org/x/term"
 
 	"github.com/jahvon/tuikit/styles"

@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/glamour"
+	"github.com/jahvon/glamour"
 
 	"github.com/jahvon/tuikit/styles"
 	"github.com/jahvon/tuikit/types"

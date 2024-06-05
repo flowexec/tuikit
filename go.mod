@@ -43,5 +43,3 @@ require (
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 )
-
-replace github.com/charmbracelet/glamour => github.com/jahvon/glamour v0.7.1-patch1

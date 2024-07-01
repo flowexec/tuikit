@@ -172,7 +172,7 @@ func (v *EntityView) HelpMsg() string {
 		}
 	}
 	if extendedHelp != "" {
-		msg = fmt.Sprintf("%s • %s", extendedHelp, msg)
+		msg = fmt.Sprintf("%s ● %s", extendedHelp, msg)
 	}
 	return msg
 }

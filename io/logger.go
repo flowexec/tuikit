@@ -256,7 +256,7 @@ func (l *StandardLogger) Fatalx(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) PlainTextInfo(msg string) {
-	if l.stdOutHandler.GetLevel() > log.InfoLevel {
+	if l.stdOutHandler.GetLevel() < log.InfoLevel {
 		return
 	}
 	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderInfo(msg))
@@ -266,7 +266,7 @@ func (l *StandardLogger) PlainTextInfo(msg string) {
 }
 
 func (l *StandardLogger) PlainTextSuccess(msg string) {
-	if l.stdOutHandler.GetLevel() > log.InfoLevel {
+	if l.stdOutHandler.GetLevel() < log.InfoLevel {
 		return
 	}
 	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderSuccess(msg))
@@ -283,7 +283,7 @@ func (l *StandardLogger) PlainTextError(msg string) {
 }
 
 func (l *StandardLogger) PlainTextWarn(msg string) {
-	if l.stdOutHandler.GetLevel() > log.InfoLevel {
+	if l.stdOutHandler.GetLevel() < log.InfoLevel {
 		return
 	}
 	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderWarning(msg))
@@ -293,7 +293,7 @@ func (l *StandardLogger) PlainTextWarn(msg string) {
 }
 
 func (l *StandardLogger) PlainTextDebug(msg string) {
-	if l.stdOutHandler.GetLevel() > log.DebugLevel {
+	if l.stdOutHandler.GetLevel() < log.DebugLevel {
 		return
 	}
 	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderEmphasis(msg))

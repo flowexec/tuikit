@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -26,7 +27,7 @@ func (t *TextInput) Value() string {
 	return t.input.Value()
 }
 
-func (t *TextInput) RunProgram(styles styles.Theme) (string, error) {
+func (t *TextInput) RunProgram(styles styles.Theme, inReader io.Reader) (string, error) {
 	in := textinput.New()
 	echoMode := textinput.EchoNormal
 	if t.Hidden {
@@ -41,7 +42,12 @@ func (t *TextInput) RunProgram(styles styles.Theme) (string, error) {
 	in.Focus()
 	t.input = &in
 
-	p := tea.NewProgram(t)
+	var p *tea.Program
+	if inReader == nil {
+		p = tea.NewProgram(t)
+	} else {
+		p = tea.NewProgram(t, tea.WithInput(inReader))
+	}
 	if _, err := p.Run(); err != nil {
 		panic(err)
 	}
@@ -112,9 +118,9 @@ func (t TextInputList) ValueMap() map[string]string {
 	return m
 }
 
-func ProcessInputs(styles styles.Theme, inputs ...*TextInput) (TextInputList, error) {
+func ProcessInputs(styles styles.Theme, inReader io.Reader, inputs ...*TextInput) (TextInputList, error) {
 	for _, in := range inputs {
-		_, err := in.RunProgram(styles)
+		_, err := in.RunProgram(styles, inReader)
 		if err != nil {
 			return nil, err
 		}

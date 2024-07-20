@@ -293,7 +293,7 @@ func (l *StandardLogger) PlainTextWarn(msg string) {
 }
 
 func (l *StandardLogger) PlainTextDebug(msg string) {
-	if l.stdOutHandler.GetLevel() < log.DebugLevel {
+	if l.stdOutHandler.GetLevel() > log.DebugLevel {
 		return
 	}
 	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderEmphasis(msg))

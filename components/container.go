@@ -156,13 +156,13 @@ func (a *ContainerView) View() string {
 	case !a.activeView.Interactive():
 		footer = a.styles.RenderFooter(a.footerNotice, a.width)
 	case a.showHelp:
-		footerPrefix = "[ q: quit] [ h: hide help ] [ ↑/↓: navigate ]"
+		footerPrefix = "[ q: quit ] [ h: hide help ] [ ↑/↓: navigate ]"
 		if a.lastView != nil {
 			footerPrefix += " [ esc: back ]"
 		}
 		footer = a.styles.RenderFooter(fmt.Sprintf("%s ● %s", footerPrefix, a.activeView.HelpMsg()), a.width)
 	case !a.showHelp && a.activeView.HelpMsg() != "":
-		footerPrefix = "[ q: quit] [ h: show help ]"
+		footerPrefix = "[ q: quit ] [ h: show help ]"
 		if a.footerNotice != "" {
 			footer = a.styles.RenderFooter(
 				fmt.Sprintf("%s ● %s ● %s", footerPrefix, a.activeView.HelpMsg(), a.footerNotice), a.width,
@@ -171,7 +171,7 @@ func (a *ContainerView) View() string {
 			footer = a.styles.RenderFooter(footerPrefix, a.width)
 		}
 	case !a.showHelp && a.activeView.HelpMsg() == "":
-		footerPrefix = "[ q: quit]"
+		footerPrefix = "[ q: quit ]"
 		if a.footerNotice != "" {
 			footer = a.styles.RenderFooter(fmt.Sprintf("%s ● %s", footerPrefix, a.footerNotice), a.width)
 		} else {

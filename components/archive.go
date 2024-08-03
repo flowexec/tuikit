@@ -173,7 +173,7 @@ func (v *LogArchiveView) View() string {
 }
 
 func (v *LogArchiveView) HelpMsg() string {
-	return "[ enter: select ] [ /: filter ] • [ d: delete selected ] [ x: delete all ]"
+	return "[ enter: select ] [ /: filter ] ● [ d: delete selected ] [ x: delete all ]"
 }
 
 func (v *LogArchiveView) Interactive() bool {

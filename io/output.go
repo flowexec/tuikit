@@ -23,6 +23,9 @@ func (w StdOutWriter) Write(p []byte) (n int, err error) {
 		w.Logger.SetMode(*w.LogMode)
 	}
 	for _, line := range splitP {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
 		switch w.Logger.LogMode() {
 		case Hidden:
 			return len(p), nil
@@ -63,6 +66,9 @@ func (w StdErrWriter) Write(p []byte) (n int, err error) {
 		w.Logger.SetMode(*w.LogMode)
 	}
 	for _, line := range splitP {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
 		switch w.Logger.LogMode() {
 		case Hidden:
 			return len(p), nil

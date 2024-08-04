@@ -23,15 +23,15 @@ func (w StdOutWriter) Write(p []byte) (n int, err error) {
 		w.Logger.SetMode(*w.LogMode)
 	}
 	for _, line := range splitP {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
 		switch w.Logger.LogMode() {
 		case Hidden:
 			return len(p), nil
 		case Text:
 			w.Logger.Println(line)
 		case JSON, Logfmt:
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
 			if len(w.LogFields) > 0 {
 				w.Logger.Infox(line, w.LogFields...)
 			} else {
@@ -66,15 +66,15 @@ func (w StdErrWriter) Write(p []byte) (n int, err error) {
 		w.Logger.SetMode(*w.LogMode)
 	}
 	for _, line := range splitP {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
 		switch w.Logger.LogMode() {
 		case Hidden:
 			return len(p), nil
 		case Text:
 			w.Logger.PlainTextError(line)
 		case JSON, Logfmt:
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
 			if len(w.LogFields) > 0 {
 				w.Logger.Errorx(line, w.LogFields...)
 			} else {

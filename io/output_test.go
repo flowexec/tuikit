@@ -21,6 +21,7 @@ func TestStdOutWriter_WriteText(t *testing.T) {
 	mockLogger.EXPECT().Println("line 1")
 	mockLogger.EXPECT().Println("line 2")
 	mockLogger.EXPECT().Println("line 3")
+	mockLogger.EXPECT().Println("")
 
 	_, err := writer.Write(input)
 	if err != nil {
@@ -78,6 +79,7 @@ func TestStdErrWriter_WriteText(t *testing.T) {
 	mockLogger.EXPECT().PlainTextError("line 1")
 	mockLogger.EXPECT().PlainTextError("line 2")
 	mockLogger.EXPECT().PlainTextError("line 3")
+	mockLogger.EXPECT().PlainTextError("")
 
 	_, err := writer.Write(input)
 	if err != nil {

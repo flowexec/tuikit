@@ -6,6 +6,7 @@ import (
 	"text/template"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 )
@@ -202,4 +203,9 @@ func (t Theme) MarkdownStyleJSON() (string, error) {
 	}
 
 	return builder.String(), nil
+}
+
+func (t Theme) FormStyles() *huh.Theme {
+	theme := huh.ThemeBase()
+	return theme
 }

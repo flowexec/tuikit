@@ -207,5 +207,6 @@ func (t Theme) MarkdownStyleJSON() (string, error) {
 
 func (t Theme) FormStyles() *huh.Theme {
 	theme := huh.ThemeBase()
+	// TODO: add custom styles
 	return theme
 }

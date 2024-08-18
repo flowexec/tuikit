@@ -120,6 +120,8 @@ func NewForm(
 				if field.Type == PromptTypeMasked {
 					mode = huh.EchoModePassword
 				}
+				var v string
+				field.value = &v
 				txt := huh.NewInput().
 					Title(field.Title).
 					Prompt(field.Prompt).
@@ -128,23 +130,27 @@ func NewForm(
 					EchoMode(mode).
 					Key(field.Key).
 					Validate(field.ValidateValue).
-					Value(field.value.(*string))
+					Value(&v)
 				hf = append(hf, txt)
 			case PromptTypeMultiline:
+				var v string
+				field.value = &v
 				txt := huh.NewText().
 					Title(field.Title).
 					Placeholder(field.Placeholder).
 					Description(field.Description).
 					Key(field.Key).
 					Validate(field.ValidateValue).
-					Value(field.value.(*string))
+					Value(&v)
 				hf = append(hf, txt)
 			case PromptTypeConfirm:
+				var v bool
+				field.value = &v
 				txt := huh.NewConfirm().
 					Title(field.Title).
 					Description(field.Description).
 					Key(field.Key).
-					Value(field.value.(*bool))
+					Value(&v)
 				hf = append(hf, txt)
 			default:
 				return nil, fmt.Errorf("unknown field type: %v", field.Type)

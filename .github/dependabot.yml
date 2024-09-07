@@ -20,6 +20,17 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "(chore) "
+    groups:
+      experimental-golang-deps:
+        patterns:
+          - "golang.org/x/*"
+      testing-deps:
+        patterns:
+          - "github.com/onsi/ginkgo/v2"
+          - "github.com/onsi/gomega"
+      charmbracelet-deps:
+        patterns:
+          - "github.com/charmbracelet/*"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:

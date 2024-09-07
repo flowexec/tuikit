@@ -9,6 +9,7 @@ import (
 )
 
 type TickMsg time.Time
+type SubmitMsgType struct{}
 type NoticeLevel string
 type Format string
 
@@ -31,10 +32,6 @@ type KeyCallback struct {
 	Callback func() error
 }
 
-type TeaModel interface {
-	tea.Model
-
-	Interactive() bool
-	HelpMsg() string
-	Type() string
+func SubmitMsg() tea.Msg {
+	return SubmitMsgType{}
 }

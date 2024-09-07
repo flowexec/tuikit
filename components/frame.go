@@ -26,7 +26,7 @@ func (v *FrameView) HelpMsg() string {
 	return ""
 }
 
-func (v *FrameView) Interactive() bool {
+func (v *FrameView) ShowFooter() bool {
 	return false
 }
 
@@ -34,7 +34,7 @@ func (v *FrameView) Type() string {
 	return FrameViewType
 }
 
-func NewFrameView(model tea.Model) TeaModel {
+func NewFrameView(model tea.Model) *FrameView {
 	return &FrameView{
 		model: model,
 	}

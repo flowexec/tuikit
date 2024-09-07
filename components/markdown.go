@@ -17,7 +17,7 @@ type MarkdownView struct {
 	appName, ctxKey, ctxValue string
 	content                   string
 	viewport                  viewport.Model
-	err                       TeaModel
+	err                       *ErrorView
 	styles                    styles.Theme
 	width, height             int
 }
@@ -113,7 +113,7 @@ func (v *MarkdownView) HelpMsg() string {
 	return ""
 }
 
-func (v *MarkdownView) Interactive() bool {
+func (v *MarkdownView) ShowFooter() bool {
 	return v.err == nil
 }
 

@@ -3,7 +3,10 @@ package components
 import (
 	"fmt"
 	"io"
+	"os"
 	"regexp"
+	"strconv"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -13,6 +16,7 @@ import (
 
 type FormFieldType uint
 
+const FormViewType = "form"
 const (
 	PromptTypeText FormFieldType = iota
 	PromptTypeMasked
@@ -30,15 +34,21 @@ type FormField struct {
 	Required       bool
 	ValidationExpr string
 	Title          string
-	Prompt         string
 	Description    string
 	Placeholder    string
 
-	value interface{}
+	value     string
+	confirmed bool
 }
 
 func (f *FormField) Set(val string) {
-	f.value = val
+	//nolint:exhaustive
+	switch f.Type {
+	case PromptTypeConfirm:
+		f.confirmed, _ = strconv.ParseBool(val)
+	default:
+		f.value = val
+	}
 }
 
 func (f *FormField) SetAndValidate(val string) error {
@@ -50,17 +60,27 @@ func (f *FormField) ValidateConfig() error {
 	if f.Key == "" {
 		return fmt.Errorf("field is missing a key")
 	}
-	if f.Title == "" && f.Prompt == "" && f.Description == "" {
-		return fmt.Errorf("field %s must specify at least one of title, prompt, or description", f.Key)
+	if f.Title == "" && f.Description == "" {
+		return fmt.Errorf("field %s must specify at least a title or description", f.Key)
 	}
 	return nil
 }
 
 func (f *FormField) Value() string {
-	if f.value == nil {
-		return f.Default
+	//nolint:exhaustive
+	switch f.Type {
+	case PromptTypeConfirm:
+		if f.Default != "" {
+			d, _ := strconv.ParseBool(f.Default)
+			return fmt.Sprintf("%v", f.confirmed || d)
+		}
+		return fmt.Sprintf("%v", f.confirmed)
+	default:
+		if f.value == "" {
+			return f.Default
+		}
+		return f.value
 	}
-	return fmt.Sprintf("%v", f.value)
 }
 
 func (f *FormField) ValidateValue(val string) error {
@@ -84,12 +104,13 @@ type Form struct {
 	fields []*FormField
 	form   *huh.Form
 	styles styles.Theme
-	err    TeaModel
+	err    *ErrorView
+	done   chan struct{}
 }
 
+//nolint:funlen,gocognit
 func NewForm(
 	styles styles.Theme,
-	accessible bool,
 	in io.Reader,
 	out io.Writer,
 	fields ...*FormField,
@@ -100,10 +121,14 @@ func NewForm(
 	form := &Form{
 		fields: fields,
 		styles: styles,
+		done:   make(chan struct{}),
 	}
 
 	groups := make(map[uint][]*FormField)
 	for _, f := range fields {
+		if err := f.ValidateConfig(); err != nil {
+			return nil, fmt.Errorf("invalid field config: %w", err)
+		}
 		if groups[f.Group] == nil {
 			groups[f.Group] = []*FormField{}
 		}
@@ -114,44 +139,55 @@ func NewForm(
 	for _, g := range groups {
 		var hf []huh.Field
 		for _, field := range g {
+			height := strings.Count(field.Description, "\n") + strings.Count(field.Title, "\n")
 			switch field.Type {
 			case PromptTypeText, PromptTypeMasked:
 				mode := huh.EchoModeNormal
 				if field.Type == PromptTypeMasked {
 					mode = huh.EchoModePassword
 				}
-				var v string
-				field.value = &v
-				txt := huh.NewInput().
-					Title(field.Title).
-					Prompt(field.Prompt).
-					Description(field.Description).
-					Placeholder(field.Placeholder).
-					EchoMode(mode).
-					Key(field.Key).
-					Validate(field.ValidateValue).
-					Value(&v)
-				hf = append(hf, txt)
+				txt := huh.NewInput().EchoMode(mode).Prompt("> ").Key(field.Key).Value(&field.value)
+				if field.Title != "" {
+					txt = txt.Title(field.Title)
+				}
+				if field.Description != "" {
+					txt = txt.Description(field.Description)
+				}
+				if field.Placeholder != "" {
+					txt = txt.Placeholder(field.Placeholder)
+				} else if field.Default != "" {
+					txt = txt.Placeholder(field.Default)
+				}
+				if field.ValidationExpr != "" {
+					txt = txt.Validate(field.ValidateValue)
+				}
+				hf = append(hf, txt.WithHeight(height))
 			case PromptTypeMultiline:
-				var v string
-				field.value = &v
-				txt := huh.NewText().
-					Title(field.Title).
-					Placeholder(field.Placeholder).
-					Description(field.Description).
-					Key(field.Key).
-					Validate(field.ValidateValue).
-					Value(&v)
-				hf = append(hf, txt)
+				txt := huh.NewText().Key(field.Key).Value(&field.value)
+				if field.Title != "" {
+					txt = txt.Title(field.Title)
+				}
+				if field.Placeholder != "" {
+					txt = txt.Placeholder(field.Placeholder)
+				} else if field.Default != "" {
+					txt = txt.Placeholder(field.Default)
+				}
+				if field.Description != "" {
+					txt = txt.Description(field.Description)
+				}
+				if field.ValidationExpr != "" {
+					txt = txt.Validate(field.ValidateValue)
+				}
+				hf = append(hf, txt.WithHeight(height))
 			case PromptTypeConfirm:
-				var v bool
-				field.value = &v
-				txt := huh.NewConfirm().
-					Title(field.Title).
-					Description(field.Description).
-					Key(field.Key).
-					Value(&v)
-				hf = append(hf, txt)
+				txt := huh.NewConfirm().Key(field.Key).Value(&field.confirmed)
+				if field.Title != "" {
+					txt = txt.Title(field.Title)
+				}
+				if field.Description != "" {
+					txt = txt.Description(field.Description)
+				}
+				hf = append(hf, txt.WithHeight(height))
 			default:
 				return nil, fmt.Errorf("unknown field type: %v", field.Type)
 			}
@@ -161,11 +197,12 @@ func NewForm(
 			addColumn = addColumn || len(hf) > 3
 		}
 	}
+	accessibleMode := os.Getenv("TUI_ACCESSIBLE") != ""
 	hf := huh.NewForm(hg...).
 		WithProgramOptions(tea.WithInput(in), tea.WithOutput(out)).
 		WithTheme(styles.FormStyles()).
-		WithAccessible(accessible)
-	hf.SubmitCmd = tea.Quit
+		WithAccessible(accessibleMode)
+	hf.SubmitCmd = SubmitMsg
 	hf.CancelCmd = tea.Quit
 	if addColumn {
 		hf = hf.WithLayout(huh.LayoutColumns(2))
@@ -192,10 +229,6 @@ func (f *Form) ValueMap() map[string]any {
 		m[field.Key] = field.Value()
 	}
 	return m
-}
-
-func (f *Form) RunProgram() error {
-	return f.form.Run()
 }
 
 func (f *Form) Init() tea.Cmd {
@@ -239,10 +272,10 @@ func (f *Form) HelpMsg() string {
 	return ""
 }
 
-func (f *Form) Interactive() bool {
-	return true
+func (f *Form) ShowFooter() bool {
+	return false
 }
 
 func (f *Form) Type() string {
-	return "form"
+	return FormViewType
 }

@@ -1,12 +1,10 @@
 visibility: private
-namespace: dev
 tags:
   - development
 executables:
   - verb: run
     name: pre-commit
-    aliases:
-      - pc
+    aliases: [pc, validate]
     description: Run the repo's pre-commit script
     exec:
       dir: //

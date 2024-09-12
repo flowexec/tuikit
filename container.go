@@ -286,12 +286,6 @@ func (c *Container) ContentWidth() int {
 	return c.contentWidth
 }
 
-func (c *Container) SetNotice(notice string, lvl styles.NoticeLevel) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	c.footerNotice = c.styles.RenderNotice(notice, lvl)
-}
-
 func (c *Container) SetView(v View) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -353,20 +347,6 @@ func (c *Container) NextView() View {
 	return c.nextView
 }
 
-// func (c *Container) ReturnToPreviousView() {
-// 	c.lock.Lock()
-// 	defer c.lock.Unlock()
-// 	c.currentView = c.previousView
-// 	c.previousView = nil
-// }
-//
-// func (c *Container) ReplaceCurrentViewWithNext() {
-// 	c.lock.Lock()
-// 	defer c.lock.Unlock()
-// 	c.currentView = c.nextView
-// 	c.nextView = nil
-// }
-
 func (c *Container) SizeSet() bool {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -380,6 +360,13 @@ func (c *Container) WithAppName(name string) *Container {
 
 func (c *Container) WithLoadingMsg(msg string) *Container {
 	c.loadingMsg = msg
+	return c
+}
+
+func (c *Container) WithNotice(notice string, lvl styles.NoticeLevel) *Container {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.footerNotice = c.styles.RenderNotice(notice, lvl)
 	return c
 }
 

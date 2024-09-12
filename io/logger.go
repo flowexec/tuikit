@@ -149,7 +149,7 @@ func (l *StandardLogger) Debugf(msg string, args ...any) {
 
 func (l *StandardLogger) Error(err error, msg string) {
 	if msg == "" {
-		l.Errorf(err.Error())
+		l.Errorf(err.Error()) //nolint:govet
 		return
 	} else if l.mode == Hidden {
 		return
@@ -186,7 +186,7 @@ func (l *StandardLogger) Warnf(msg string, args ...any) {
 }
 
 func (l *StandardLogger) FatalErr(err error) {
-	l.Fatalf(err.Error())
+	l.Fatalf(err.Error()) //nolint:govet
 }
 
 func (l *StandardLogger) Fatalf(msg string, args ...any) {

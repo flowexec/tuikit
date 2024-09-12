@@ -139,6 +139,18 @@ func (t Theme) RenderFooter(text string, width int) string {
 	return footerStyle.Render(text)
 }
 
+func (t Theme) RenderKeyAndValue(key, value string) string {
+	keyStyle := lipgloss.NewStyle().Foreground(t.SecondaryColor).Bold(true)
+	valueStyle := lipgloss.NewStyle().Foreground(t.Gray)
+	return keyStyle.Render(key) + ": " + valueStyle.Render(value)
+}
+
+func (t Theme) RenderKeyAndValueWithBreak(key, value string) string {
+	keyStyle := lipgloss.NewStyle().Foreground(t.SecondaryColor).Bold(true)
+	valueStyle := lipgloss.NewStyle().Foreground(t.Gray)
+	return keyStyle.Render(key) + "\n" + valueStyle.Render(value)
+}
+
 func (t Theme) RenderInputForm(text string) string {
 	return lipgloss.NewStyle().PaddingLeft(2).Render(text)
 }
@@ -205,8 +217,15 @@ func (t Theme) MarkdownStyleJSON() (string, error) {
 	return builder.String(), nil
 }
 
-func (t Theme) FormStyles() *huh.Theme {
+func (t Theme) HuhTheme() *huh.Theme {
 	theme := huh.ThemeBase()
-	// TODO: add custom styles
+	theme.FieldSeparator = lipgloss.NewStyle().SetString("\n\n")
+
+	theme.Focused.Base = lipgloss.NewStyle().PaddingLeft(1).BorderStyle(lipgloss.ThickBorder()).BorderLeft(true)
+	theme.Focused.Card = lipgloss.NewStyle().PaddingLeft(1)
+	theme.Focused.FocusedButton = theme.Focused.FocusedButton.Foreground(t.PrimaryColor).Background(t.TertiaryColor)
+	theme.Focused.BlurredButton = theme.Focused.BlurredButton.Foreground(t.SecondaryColor).Background(t.Gray)
+	theme.Focused.TextInput.Placeholder = lipgloss.NewStyle().Foreground(t.BodyColor)
+
 	return theme
 }

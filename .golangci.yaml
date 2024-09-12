@@ -104,9 +104,7 @@ linters:
     - durationcheck # checks for two durations multiplied together
     - errname # checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
     - errorlint # finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
-    - execinquery # checks query string in Query function which reads your Go src files and warning it finds
     - exhaustive # checks exhaustiveness of enum switch statements
-    - exportloopref # checks for pointers to enclosing loop variables
     - funlen # tool for detection of long functions
     - gocognit # computes and checks the cognitive complexity of functions
     - goconst # finds repeated strings that could be replaced by a constant
@@ -171,7 +169,7 @@ issues:
 
   exclude:
     - 'declaration of "(err|ctx)" shadows declaration at' # shadowing of err and ctx is acceptable
-
+    - "G115"
   exclude-rules:
     - source: "(noinspection|TODO)"
       linters: [ godot ]

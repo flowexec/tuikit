@@ -1,6 +1,8 @@
 package components
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +12,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+	"golang.org/x/term"
 
 	"github.com/jahvon/tuikit/styles"
 )
@@ -101,18 +104,18 @@ func (f *FormField) ValidateValue(val string) error {
 }
 
 type Form struct {
-	fields []*FormField
-	form   *huh.Form
-	styles styles.Theme
-	err    *ErrorView
-	done   chan struct{}
+	fields    []*FormField
+	form      *huh.Form
+	styles    styles.Theme
+	err       *ErrorView
+	completed bool
 }
 
-//nolint:funlen,gocognit
+//nolint:gocognit
 func NewForm(
 	styles styles.Theme,
-	in io.Reader,
-	out io.Writer,
+	in *os.File,
+	out *os.File,
 	fields ...*FormField,
 ) (*Form, error) {
 	if len(fields) == 0 {
@@ -121,7 +124,19 @@ func NewForm(
 	form := &Form{
 		fields: fields,
 		styles: styles,
-		done:   make(chan struct{}),
+	}
+
+	inInfo, err := in.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get input file info: %w", err)
+	}
+
+	if inInfo.Mode()&os.ModeNamedPipe != 0 || term.IsTerminal(int(in.Fd())) {
+		if err := readPipedInput(in, fields); err != nil {
+			return nil, fmt.Errorf("error reading piped input: %w", err)
+		}
+		form.completed = true
+		return form, nil
 	}
 
 	groups := make(map[uint][]*FormField)
@@ -142,52 +157,12 @@ func NewForm(
 			height := strings.Count(field.Description, "\n") + strings.Count(field.Title, "\n")
 			switch field.Type {
 			case PromptTypeText, PromptTypeMasked:
-				mode := huh.EchoModeNormal
-				if field.Type == PromptTypeMasked {
-					mode = huh.EchoModePassword
-				}
-				txt := huh.NewInput().EchoMode(mode).Prompt("> ").Key(field.Key).Value(&field.value)
-				if field.Title != "" {
-					txt = txt.Title(field.Title)
-				}
-				if field.Description != "" {
-					txt = txt.Description(field.Description)
-				}
-				if field.Placeholder != "" {
-					txt = txt.Placeholder(field.Placeholder)
-				} else if field.Default != "" {
-					txt = txt.Placeholder(field.Default)
-				}
-				if field.ValidationExpr != "" {
-					txt = txt.Validate(field.ValidateValue)
-				}
-				hf = append(hf, txt.WithHeight(height))
+				masked := field.Type == PromptTypeMasked
+				hf = append(hf, textHuhField(field, masked).WithHeight(height))
 			case PromptTypeMultiline:
-				txt := huh.NewText().Key(field.Key).Value(&field.value)
-				if field.Title != "" {
-					txt = txt.Title(field.Title)
-				}
-				if field.Placeholder != "" {
-					txt = txt.Placeholder(field.Placeholder)
-				} else if field.Default != "" {
-					txt = txt.Placeholder(field.Default)
-				}
-				if field.Description != "" {
-					txt = txt.Description(field.Description)
-				}
-				if field.ValidationExpr != "" {
-					txt = txt.Validate(field.ValidateValue)
-				}
-				hf = append(hf, txt.WithHeight(height))
+				hf = append(hf, multilineHuhField(field).WithHeight(height))
 			case PromptTypeConfirm:
-				txt := huh.NewConfirm().Key(field.Key).Value(&field.confirmed)
-				if field.Title != "" {
-					txt = txt.Title(field.Title)
-				}
-				if field.Description != "" {
-					txt = txt.Description(field.Description)
-				}
-				hf = append(hf, txt.WithHeight(height))
+				hf = append(hf, confirmHuhField(field).WithHeight(height))
 			default:
 				return nil, fmt.Errorf("unknown field type: %v", field.Type)
 			}
@@ -200,7 +175,7 @@ func NewForm(
 	accessibleMode := os.Getenv("TUI_ACCESSIBLE") != ""
 	hf := huh.NewForm(hg...).
 		WithProgramOptions(tea.WithInput(in), tea.WithOutput(out)).
-		WithTheme(styles.FormStyles()).
+		WithTheme(styles.HuhTheme()).
 		WithAccessible(accessibleMode)
 	hf.SubmitCmd = SubmitMsg
 	hf.CancelCmd = tea.Quit
@@ -231,7 +206,15 @@ func (f *Form) ValueMap() map[string]any {
 	return m
 }
 
+func (f *Form) Completed() bool {
+	return f.completed
+}
+
 func (f *Form) Init() tea.Cmd {
+	if f.completed {
+		printFieldsSummary(f.fields, f.styles)
+		return tea.Quit
+	}
 	return f.form.Init()
 }
 
@@ -240,7 +223,6 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return f.err.Update(msg)
 	}
 
-	//nolint:gocritic
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		//nolint:exhaustive
@@ -248,6 +230,9 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
 			return f.form, tea.Quit
 		}
+	case SubmitMsgType:
+		f.completed = true
+		return f.form, tea.Quit
 	}
 
 	model, cmd := f.form.Update(msg)
@@ -278,4 +263,90 @@ func (f *Form) ShowFooter() bool {
 
 func (f *Form) Type() string {
 	return FormViewType
+}
+
+func readPipedInput(in *os.File, fields []*FormField) error {
+	reader := bufio.NewReader(in)
+	for _, field := range fields {
+		line, err := reader.ReadString('\r')
+		if err != nil && errors.Is(err, io.EOF) {
+			return fmt.Errorf("error reading input line: %w", err)
+		}
+		if !field.Required && line == "" && field.Default != "" {
+			line = field.Default
+		}
+		if err := field.SetAndValidate(strings.TrimSpace(line)); err != nil {
+			return fmt.Errorf("error setting field value: %w", err)
+		}
+	}
+	return nil
+}
+
+func printFieldsSummary(fields []*FormField, styles styles.Theme) {
+	groupedFields := make(map[uint][]*FormField)
+	for _, field := range fields {
+		if groupedFields[field.Group] == nil {
+			groupedFields[field.Group] = []*FormField{}
+		}
+		groupedFields[field.Group] = append(groupedFields[field.Group], field)
+	}
+	for _, group := range groupedFields {
+		for _, field := range group {
+			fmt.Println(styles.RenderKeyAndValueWithBreak(field.Title, field.Value()))
+		}
+		fmt.Println()
+	}
+}
+
+func textHuhField(field *FormField, masked bool) huh.Field {
+	mode := huh.EchoModeNormal
+	if masked {
+		mode = huh.EchoModePassword
+	}
+	txt := huh.NewInput().EchoMode(mode).Prompt("> ").Key(field.Key).Value(&field.value)
+	if field.Title != "" {
+		txt = txt.Title(field.Title)
+	}
+	if field.Description != "" {
+		txt = txt.Description(field.Description)
+	}
+	if field.Placeholder != "" {
+		txt = txt.Placeholder(field.Placeholder)
+	} else if field.Default != "" {
+		txt = txt.Placeholder(field.Default)
+	}
+	if field.ValidationExpr != "" {
+		txt = txt.Validate(field.ValidateValue)
+	}
+	return txt
+}
+
+func multilineHuhField(field *FormField) huh.Field {
+	txt := huh.NewText().Key(field.Key).Value(&field.value)
+	if field.Title != "" {
+		txt = txt.Title(field.Title)
+	}
+	if field.Placeholder != "" {
+		txt = txt.Placeholder(field.Placeholder)
+	} else if field.Default != "" {
+		txt = txt.Placeholder(field.Default)
+	}
+	if field.Description != "" {
+		txt = txt.Description(field.Description)
+	}
+	if field.ValidationExpr != "" {
+		txt = txt.Validate(field.ValidateValue)
+	}
+	return txt
+}
+
+func confirmHuhField(field *FormField) huh.Field {
+	txt := huh.NewConfirm().Key(field.Key).Value(&field.confirmed)
+	if field.Title != "" {
+		txt = txt.Title(field.Title)
+	}
+	if field.Description != "" {
+		txt = txt.Description(field.Description)
+	}
+	return txt
 }

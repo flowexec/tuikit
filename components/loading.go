@@ -9,7 +9,10 @@ import (
 	"github.com/jahvon/tuikit/styles"
 )
 
-const LoadingViewType = "loading"
+const (
+	LoadingViewType = "loading"
+	DefaultLoading  = "loading..."
+)
 
 type LoadingView struct {
 	styles  styles.Theme
@@ -36,7 +39,7 @@ func (v *LoadingView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (v *LoadingView) View() string {
 	var txt string
 	if v.msg == "" {
-		txt = fmt.Sprintf("\n\n %s %s\n\n", v.spinner.View(), v.styles.RenderInfo("loading..."))
+		txt = fmt.Sprintf("\n\n %s %s\n\n", v.spinner.View(), v.styles.RenderInfo(DefaultLoading))
 	} else {
 		txt = fmt.Sprintf("\n\n %s %s\n\n", v.spinner.View(), v.styles.RenderInfo(v.msg))
 	}
@@ -47,7 +50,7 @@ func (v *LoadingView) HelpMsg() string {
 	return ""
 }
 
-func (v *LoadingView) Interactive() bool {
+func (v *LoadingView) ShowFooter() bool {
 	return false
 }
 
@@ -55,7 +58,7 @@ func (v *LoadingView) Type() string {
 	return LoadingViewType
 }
 
-func NewLoadingView(msg string, styles styles.Theme) TeaModel {
+func NewLoadingView(msg string, styles styles.Theme) *LoadingView {
 	spin := spinner.New()
 	spin.Style = styles.Spinner()
 	spin.Spinner = styles.SpinnerType

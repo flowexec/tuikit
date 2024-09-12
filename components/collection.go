@@ -17,7 +17,7 @@ type CollectionView struct {
 
 	model *list.Model
 	items []list.Item
-	err   TeaModel
+	err   *ErrorView
 
 	format        Format
 	width, height int
@@ -32,7 +32,7 @@ func NewCollectionView(
 	format Format,
 	selectedFunc func(header string) error,
 	keys ...KeyCallback,
-) TeaModel {
+) *CollectionView {
 	if format == "" {
 		format = FormatList
 	}
@@ -233,7 +233,7 @@ func (v *CollectionView) HelpMsg() string {
 	return msg
 }
 
-func (v *CollectionView) Interactive() bool {
+func (v *CollectionView) ShowFooter() bool {
 	return v.err == nil
 }
 

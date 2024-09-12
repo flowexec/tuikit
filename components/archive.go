@@ -24,17 +24,19 @@ type LogArchiveView struct {
 	model       *list.Model
 	items       []list.Item
 	activeEntry *io.ArchiveEntry
-	err         TeaModel
+	err         *ErrorView
 
 	width, height int
 	styles        styles.Theme
 }
 
-func NewLogArchiveView(state *TerminalState, archiveDir string, lastEntry bool) TeaModel {
+func NewLogArchiveView(state *TerminalState, archiveDir string, lastEntry bool) *LogArchiveView {
 	items := make([]list.Item, 0)
 	entries, err := io.ListArchiveEntries(archiveDir)
+	var errView *ErrorView
 	if err != nil {
-		return NewErrorView(err, state.Theme)
+		errView = NewErrorView(err, state.Theme)
+		return &LogArchiveView{err: errView}
 	}
 	slices.Reverse(entries)
 	for _, entry := range entries {
@@ -176,7 +178,7 @@ func (v *LogArchiveView) HelpMsg() string {
 	return "[ enter: select ] [ /: filter ] ● [ d: delete selected ] [ x: delete all ]"
 }
 
-func (v *LogArchiveView) Interactive() bool {
+func (v *LogArchiveView) ShowFooter() bool {
 	return v.err == nil && v.activeEntry == nil
 }
 

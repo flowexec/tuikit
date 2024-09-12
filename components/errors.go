@@ -16,7 +16,7 @@ type ErrorView struct {
 	styles styles.Theme
 }
 
-func NewErrorView(err error, styles styles.Theme) TeaModel {
+func NewErrorView(err error, styles styles.Theme) *ErrorView {
 	return &ErrorView{
 		err:    err,
 		styles: styles,
@@ -44,7 +44,7 @@ func (v *ErrorView) HelpMsg() string {
 	return ""
 }
 
-func (v *ErrorView) Interactive() bool {
+func (v *ErrorView) ShowFooter() bool {
 	return false
 }
 

@@ -16,7 +16,7 @@ type EntityView struct {
 	entity types.Entity
 
 	viewport viewport.Model
-	err      TeaModel
+	err      *ErrorView
 
 	styles        styles.Theme
 	width, height int
@@ -29,7 +29,7 @@ func NewEntityView(
 	entity types.Entity,
 	format Format,
 	keys ...KeyCallback,
-) TeaModel {
+) *EntityView {
 	if format == "" {
 		format = FormatDocument
 	}
@@ -177,7 +177,7 @@ func (v *EntityView) HelpMsg() string {
 	return msg
 }
 
-func (v *EntityView) Interactive() bool {
+func (v *EntityView) ShowFooter() bool {
 	return v.err == nil
 }
 

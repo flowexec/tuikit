@@ -13,3 +13,17 @@ executables:
         go mod tidy
         golangci-lint run ./...
         go test ./...
+
+# TODO: fix running of tea programs from within the container
+#  - verb: run
+#    name: sample
+#    description: Run the sample container program
+#    exec:
+#      dir: //
+#      args:
+#        - envKey: VIEW
+#          pos: 1
+#          default: frame
+#      logMode: text
+#      cmd: go run ./sample --view $VIEW
+#

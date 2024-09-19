@@ -1,4 +1,4 @@
-package components
+package views
 
 import (
 	"fmt"
@@ -20,26 +20,26 @@ type EntityView struct {
 
 	styles        styles.Theme
 	width, height int
-	format        Format
-	callbacks     []KeyCallback
+	format        types.Format
+	callbacks     []types.KeyCallback
 }
 
 func NewEntityView(
-	state *TerminalState,
+	state *types.RenderState,
 	entity types.Entity,
-	format Format,
-	keys ...KeyCallback,
+	format types.Format,
+	keys ...types.KeyCallback,
 ) *EntityView {
 	if format == "" {
-		format = FormatDocument
+		format = types.EntityFormatDocument
 	}
-	vp := viewport.New(state.Width, state.Height)
-	vp.Style = state.Theme.EntityView().Width(state.Width)
+	vp := viewport.New(state.ContentWidth, state.ContentHeight)
+	vp.Style = state.Theme.EntityView().Width(state.ContentWidth)
 	return &EntityView{
 		entity:    entity,
-		styles:    state.Theme,
-		width:     state.Width,
-		height:    state.Height,
+		styles:    *state.Theme,
+		width:     state.ContentWidth,
+		height:    state.ContentHeight,
 		format:    format,
 		callbacks: keys,
 		viewport:  vp,
@@ -59,29 +59,29 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	v.viewport, cmd = v.viewport.Update(msg)
 
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		v.viewport.Width = msg.Width
-		v.viewport.Height = msg.Height - (styles.HeaderHeight + styles.FooterHeight)
+	case types.RenderState:
+		v.viewport.Width = msg.ContentWidth
+		v.viewport.Height = msg.ContentHeight
 		v.viewport.SetContent(v.renderedContent())
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "-", "d":
-			if v.format == FormatDocument {
+			if v.format == types.EntityFormatDocument {
 				return v, nil
 			}
-			v.format = FormatDocument
+			v.format = types.EntityFormatDocument
 			v.viewport.GotoTop()
 		case "y":
-			if v.format == FormatYAML {
+			if v.format == types.CollectionFormatYAML {
 				return v, nil
 			}
-			v.format = FormatYAML
+			v.format = types.CollectionFormatYAML
 			v.viewport.GotoTop()
 		case "j":
-			if v.format == FormatJSON {
+			if v.format == types.CollectionFormatJSON {
 				return v, nil
 			}
-			v.format = FormatJSON
+			v.format = types.CollectionFormatJSON
 			v.viewport.GotoTop()
 		case "up":
 			v.viewport.LineUp(1)
@@ -105,15 +105,15 @@ func (v *EntityView) renderedContent() string {
 	var content string
 	var err error
 	switch v.format {
-	case FormatYAML:
+	case types.CollectionFormatYAML:
 		content, err = v.entity.YAML()
 		content = fmt.Sprintf("```yaml\n%s\n```", content)
-	case FormatJSON:
+	case types.CollectionFormatJSON:
 		content, err = v.entity.JSON()
 		content = fmt.Sprintf("```json\n%s\n```", content)
-	case FormatDocument:
+	case types.EntityFormatDocument:
 		content = v.entity.Markdown()
-	case FormatList:
+	case types.CollectionFormatList:
 		fallthrough
 	default:
 		content = "unsupported format"

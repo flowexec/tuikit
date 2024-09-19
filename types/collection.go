@@ -1,27 +1,13 @@
 package types
 
-import "fmt"
-
-type CollectionItem struct {
-	Header    string
-	SubHeader string
-	Desc      string
-	ID        string
-}
-
-func (i *CollectionItem) Title() string {
-	title := i.Header
-	if i.SubHeader != "" {
-		title += fmt.Sprintf(" (%s)", i.SubHeader)
-	}
-	return title
-}
-
-func (i *CollectionItem) Description() string { return i.Desc }
-func (i *CollectionItem) FilterValue() string { return i.ID }
+const (
+	CollectionFormatList Format = "list"
+	CollectionFormatJSON Format = "json"
+	CollectionFormatYAML Format = "yaml"
+)
 
 type Collection interface {
-	Items() []*CollectionItem
+	Items() []*EntityInfo
 	YAML() (string, error)
 	JSON() (string, error)
 	Singular() string

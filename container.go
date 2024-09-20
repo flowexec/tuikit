@@ -26,11 +26,12 @@ type View interface {
 }
 
 type Container struct {
-	ctx     context.Context
-	cancel  context.CancelFunc
-	app     *Application
-	program *Program
-	render  *types.RenderState
+	ctx      context.Context
+	cancel   context.CancelFunc
+	app      *Application
+	program  *Program
+	render   *types.RenderState
+	sendFunc func(msg tea.Msg) // Temporary hack for testing
 
 	previousView, currentView, nextView View
 	showHelp                            bool
@@ -250,14 +251,7 @@ func (c *Container) View() string {
 }
 
 func (c *Container) Ready() bool {
-	switch {
-	case !c.program.Started():
-		return false
-	case !c.SizeSet():
-		return false
-	default:
-		return true
-	}
+	return c.SizeSet()
 }
 
 func (c *Container) Shutdown() {
@@ -293,9 +287,6 @@ func (c *Container) SetView(v View) error {
 	switch {
 	case v == nil:
 		return errors.New("view not provided")
-	case !c.program.Started():
-		c.SetNextView(v)
-		return nil
 	case c.program.Suspended():
 		if err := c.program.Resume(); err != nil {
 			return fmt.Errorf("unable to resume program - %w", err)
@@ -324,14 +315,22 @@ func (c *Container) SetView(v View) error {
 	return nil
 }
 
+func (c *Container) SetSendFunc(f func(msg tea.Msg)) {
+	c.sendFunc = f
+}
+
 func (c *Container) Send(msg tea.Msg, delay time.Duration) {
+	if c.sendFunc == nil {
+		c.sendFunc = c.program.Send
+	}
+
 	if delay > 0 {
 		go func() {
 			time.Sleep(delay)
-			c.program.Send(msg)
+			c.sendFunc(msg)
 		}()
 	} else {
-		c.program.Send(msg)
+		c.sendFunc(msg)
 	}
 }
 

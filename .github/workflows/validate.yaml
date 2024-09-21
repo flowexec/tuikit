@@ -65,7 +65,7 @@ jobs:
       #
       - name: Run coverage
         # TODO: Add -race flag when the container becomes thread safe
-        run: go test ./... -coverprofile=coverage.txt -covermode=atomic
+        run: go test ./... -coverprofile=coverage.txt
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

@@ -83,9 +83,9 @@ func (t Theme) RenderNotice(notice string, lvl NoticeLevel) string {
 	}
 }
 
-func (t Theme) RenderHeader(appName, ctxKey, ctxVal string, width int) string {
+func (t Theme) RenderHeader(appName, stateKey, stateVal string, width int) string {
 	if width == 0 {
-		return t.renderShortHeader(appName, ctxKey, ctxVal)
+		return t.renderShortHeader(appName, stateKey, stateVal)
 	}
 
 	appNameStyle := lipgloss.NewStyle().
@@ -102,12 +102,15 @@ func (t Theme) RenderHeader(appName, ctxKey, ctxVal string, width int) string {
 		Height(HeaderHeight)
 
 	appNameContent := appNameStyle.Render(fmt.Sprintf(" %s ", appName))
-	ctxContent := lipgloss.JoinHorizontal(
-		0,
-		ctxStyle.Render(t.RenderBold(fmt.Sprintf(" %s:", ctxKey))),
-		ctxStyle.Render(fmt.Sprintf("%s ", ctxVal)),
-	)
-	fullContent := lipgloss.JoinHorizontal(0, appNameContent, ctxContent)
+	var stateContent string
+	if stateKey != "" && stateVal != "" {
+		stateContent = lipgloss.JoinHorizontal(
+			0,
+			ctxStyle.Render(t.RenderBold(fmt.Sprintf(" %s:", stateKey))),
+			ctxStyle.Render(fmt.Sprintf("%s ", stateVal)),
+		)
+	}
+	fullContent := lipgloss.JoinHorizontal(0, appNameContent, stateContent)
 	borderWidth := width - lipgloss.Width(fullContent)
 	if borderWidth < 0 {
 		borderWidth = 0
@@ -221,11 +224,32 @@ func (t Theme) HuhTheme() *huh.Theme {
 	theme := huh.ThemeBase()
 	theme.FieldSeparator = lipgloss.NewStyle().SetString("\n\n")
 
-	theme.Focused.Base = lipgloss.NewStyle().PaddingLeft(1).BorderStyle(lipgloss.ThickBorder()).BorderLeft(true)
-	theme.Focused.Card = lipgloss.NewStyle().PaddingLeft(1)
+	theme.Focused.Base = theme.Focused.Base.BorderStyle(lipgloss.HiddenBorder())
+	theme.Focused.Title = theme.Focused.Title.Foreground(t.PrimaryColor).Bold(true)
+	theme.Focused.Description = theme.Focused.Description.Foreground(t.BodyColor)
+	theme.Focused.ErrorMessage = theme.Focused.ErrorMessage.Foreground(t.ErrorColor)
 	theme.Focused.FocusedButton = theme.Focused.FocusedButton.Foreground(t.PrimaryColor).Background(t.TertiaryColor)
 	theme.Focused.BlurredButton = theme.Focused.BlurredButton.Foreground(t.SecondaryColor).Background(t.Gray)
-	theme.Focused.TextInput.Placeholder = lipgloss.NewStyle().Foreground(t.BodyColor)
+
+	theme.Focused.TextInput.Placeholder = theme.Focused.TextInput.Placeholder.Foreground(t.BodyColor)
+	theme.Focused.TextInput.Cursor = theme.Focused.TextInput.Cursor.Foreground(t.SecondaryColor)
+	theme.Focused.TextInput.CursorText = theme.Focused.TextInput.Cursor.Foreground(t.SecondaryColor)
+	theme.Focused.TextInput.Placeholder = theme.Focused.TextInput.Placeholder.Foreground(t.Gray)
+	theme.Focused.TextInput.Text = theme.Focused.TextInput.Text.Foreground(t.BodyColor)
+	theme.Focused.TextInput.Prompt = theme.Focused.TextInput.Prompt.Foreground(t.TertiaryColor)
+
+	theme.Blurred.Title = theme.Blurred.Title.Foreground(t.White)
+	theme.Blurred.Description = theme.Blurred.Description.Foreground(t.Gray)
+	theme.Blurred.ErrorMessage = theme.Blurred.ErrorMessage.Foreground(t.EmphasisColor)
+	theme.Blurred.FocusedButton = theme.Blurred.FocusedButton.Foreground(t.SecondaryColor).Background(t.Gray)
+	theme.Blurred.BlurredButton = theme.Blurred.BlurredButton.Foreground(t.Gray).Background(t.Gray)
+
+	theme.Blurred.TextInput.Placeholder = theme.Blurred.TextInput.Placeholder.Foreground(t.Gray)
+	theme.Blurred.TextInput.Cursor = theme.Blurred.TextInput.Cursor.Foreground(t.Gray)
+	theme.Blurred.TextInput.CursorText = theme.Blurred.TextInput.CursorText.Foreground(t.Gray)
+	theme.Blurred.TextInput.Placeholder = theme.Blurred.TextInput.Placeholder.Foreground(t.Gray)
+	theme.Blurred.TextInput.Text = theme.Blurred.TextInput.Text.Foreground(t.Gray)
+	theme.Blurred.TextInput.Prompt = theme.Blurred.TextInput.Prompt.Foreground(t.Gray)
 
 	return theme
 }

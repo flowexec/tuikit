@@ -8,7 +8,7 @@
     "color": "{{ .QuoteColor }}",
     "italic": true,
     "indent": 1,
-    "indent_token": "| "
+    "indent_token": "│ "
   },
   "paragraph": {
     "color": "{{ .BodyColor }}",
@@ -107,7 +107,7 @@
     "background_color": "{{ .CodeBgColor }}",
     "theme": "{{ .ChromaTheme }}",
     "indent": 1,
-    "indent_token": "| "
+    "indent_token": "│ "
   },
   "table": {
     "color": "{{ .DividerColor }}",

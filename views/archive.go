@@ -1,4 +1,4 @@
-package components
+package views
 
 import (
 	"errors"
@@ -15,6 +15,7 @@ import (
 
 	"github.com/jahvon/tuikit/io"
 	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/types"
 )
 
 type LogArchiveView struct {
@@ -30,19 +31,19 @@ type LogArchiveView struct {
 	styles        styles.Theme
 }
 
-func NewLogArchiveView(state *TerminalState, archiveDir string, lastEntry bool) *LogArchiveView {
+func NewLogArchiveView(state *types.RenderState, archiveDir string, lastEntry bool) *LogArchiveView {
 	items := make([]list.Item, 0)
 	entries, err := io.ListArchiveEntries(archiveDir)
 	var errView *ErrorView
 	if err != nil {
-		errView = NewErrorView(err, state.Theme)
+		errView = NewErrorView(err, *state.Theme)
 		return &LogArchiveView{err: errView}
 	}
 	slices.Reverse(entries)
 	for _, entry := range entries {
 		items = append(items, entry)
 	}
-	delegate := &logArchiveDelegate{styles: state.Theme}
+	delegate := &logArchiveDelegate{styles: *state.Theme}
 	model := list.New(items, delegate, state.Width, state.Height)
 	model.SetShowTitle(false)
 	model.SetShowHelp(false)
@@ -60,9 +61,9 @@ func NewLogArchiveView(state *TerminalState, archiveDir string, lastEntry bool) 
 		activeEntry:   lastEntryFile,
 		model:         &model,
 		items:         items,
-		width:         state.Width,
-		height:        state.Height,
-		styles:        state.Theme,
+		width:         state.ContentWidth,
+		height:        state.ContentHeight,
+		styles:        *state.Theme,
 	}
 }
 
@@ -76,11 +77,11 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return v.err.Update(msg)
 	}
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		v.width = msg.Width
-		v.height = msg.Height - (styles.HeaderHeight + styles.FooterHeight)
+	case types.RenderState:
+		v.width = msg.ContentWidth
+		v.height = msg.ContentHeight
 		v.model.SetSize(v.width, v.height)
-	case TickMsg:
+	case types.TickMsg:
 		if v.activeEntry != nil {
 			time.Sleep(time.Second)
 			return v, tea.Quit

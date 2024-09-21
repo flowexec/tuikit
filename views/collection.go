@@ -1,4 +1,4 @@
-package components
+package views
 
 import (
 	"fmt"
@@ -19,22 +19,22 @@ type CollectionView struct {
 	items []list.Item
 	err   *ErrorView
 
-	format        Format
+	format        types.Format
 	width, height int
 	styles        styles.Theme
-	callbacks     []KeyCallback
+	callbacks     []types.KeyCallback
 	selectedFunc  func(header string) error
 }
 
 func NewCollectionView(
-	state *TerminalState,
+	state *types.RenderState,
 	collection types.Collection,
-	format Format,
+	format types.Format,
 	selectedFunc func(header string) error,
-	keys ...KeyCallback,
+	keys ...types.KeyCallback,
 ) *CollectionView {
 	if format == "" {
-		format = FormatList
+		format = types.CollectionFormatList
 	}
 	items := make([]list.Item, 0)
 	for _, item := range collection.Items() {
@@ -59,9 +59,9 @@ func NewCollectionView(
 		model:        &model,
 		items:        items,
 		format:       format,
-		width:        state.Width,
-		height:       state.Height,
-		styles:       state.Theme,
+		width:        state.ContentWidth,
+		height:       state.ContentHeight,
+		styles:       *state.Theme,
 		selectedFunc: selectedFunc,
 		callbacks:    keys,
 	}
@@ -78,27 +78,27 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		v.width = msg.Width
-		v.height = msg.Height - (styles.HeaderHeight + styles.FooterHeight)
+	case types.RenderState:
+		v.width = msg.ContentWidth
+		v.height = msg.ContentHeight
 		v.model.SetSize(v.width, v.height)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "-", "l":
-			if v.format == FormatList {
+			if v.format == types.CollectionFormatList {
 				return v, nil
 			}
-			v.format = FormatList
+			v.format = types.CollectionFormatList
 		case "y":
-			if v.format == FormatYAML {
+			if v.format == types.CollectionFormatYAML {
 				return v, nil
 			}
-			v.format = FormatYAML
+			v.format = types.CollectionFormatYAML
 		case "j":
-			if v.format == FormatJSON {
+			if v.format == types.CollectionFormatJSON {
 				return v, nil
 			}
-			v.format = FormatJSON
+			v.format = types.CollectionFormatJSON
 		case tea.KeyEnter.String():
 			if v.selectedFunc == nil {
 				return v, nil
@@ -149,20 +149,20 @@ func (v *CollectionView) renderedContent() string {
 	var isMkdwn bool
 	var err error
 	switch v.format {
-	case FormatYAML:
+	case types.CollectionFormatYAML:
 		content, err = v.collection.YAML()
 		content = fmt.Sprintf("```yaml\n%s\n```", content)
 		isMkdwn = true
-	case FormatJSON:
+	case types.CollectionFormatJSON:
 		content, err = v.collection.JSON()
 		content = fmt.Sprintf("```json\n%s\n```", content)
 		isMkdwn = true
-	case FormatList:
+	case types.CollectionFormatList:
 		v.model.SetSize(v.width, v.height)
 		v.UpdateItemsFromCollections()
 		style := v.styles.Collection().Width(v.width)
 		content = style.Render(v.model.View())
-	case FormatDocument:
+	case types.EntityFormatDocument:
 		fallthrough
 	default:
 		content = "unsupported format"

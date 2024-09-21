@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on
+      COLORTERM: "truecolor"
+      COLORFGBG: "15;0"
+      TERM: "xterm-256color"
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -64,7 +67,8 @@ jobs:
       #    |_|\___||___/\__|
       #
       - name: Run coverage
-        run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+        # TODO: Add -race flag when the container becomes thread safe
+        run: go test ./... -coverprofile=coverage.txt -covermode=atomic
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

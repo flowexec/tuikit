@@ -1,4 +1,4 @@
-package components
+package views
 
 import (
 	"bufio"
@@ -15,6 +15,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/types"
 )
 
 type FormFieldType uint
@@ -48,6 +49,10 @@ func (f *FormField) Set(val string) {
 	//nolint:exhaustive
 	switch f.Type {
 	case PromptTypeConfirm:
+		if v := strings.ToLower(val); v == "y" || v == "yes" {
+			f.confirmed = true
+			return
+		}
 		f.confirmed, _ = strconv.ParseBool(val)
 	default:
 		f.value = val
@@ -88,32 +93,36 @@ func (f *FormField) Value() string {
 
 func (f *FormField) ValidateValue(val string) error {
 	if val == "" && f.Required {
-		return fmt.Errorf("required field with key %s not set", f.Key)
+		return fmt.Errorf("required field with key '%s' not set", f.Key)
 	}
 
 	if f.ValidationExpr != "" {
 		r, err := regexp.Compile(f.ValidationExpr)
 		if err != nil {
-			return fmt.Errorf("unable to compile validation regex for field with key %s: %w", f.Key, err)
+			return fmt.Errorf("unable to compile validation regex for field with key '%s': %w", f.Key, err)
 		}
 		if !r.MatchString(fmt.Sprintf("%v", f.Value())) {
-			return fmt.Errorf("validation (%s) failed for field with key %s", f.ValidationExpr, f.Key)
+			return fmt.Errorf("validation (%s) failed for field with key '%s'", f.ValidationExpr, f.Key)
 		}
 	}
 	return nil
 }
 
 type Form struct {
+	Callback func(map[string]any) error
+
 	fields    []*FormField
 	form      *huh.Form
-	styles    styles.Theme
+	theme     styles.Theme
 	err       *ErrorView
 	completed bool
 }
 
-//nolint:gocognit
+// NewForm creates a new form model that can be run in a Bubble Tea program. It includes some extra handling
+// for reading piped input.
+// This form should NOT be used in a tuikit container. Instead, use NewFormView.
 func NewForm(
-	styles styles.Theme,
+	theme styles.Theme,
 	in *os.File,
 	out *os.File,
 	fields ...*FormField,
@@ -123,67 +132,70 @@ func NewForm(
 	}
 	form := &Form{
 		fields: fields,
-		styles: styles,
+		theme:  theme,
 	}
 
-	inInfo, err := in.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("unable to get input file info: %w", err)
-	}
+	programOpts := make([]tea.ProgramOption, 0)
+	if in != nil {
+		inInfo, err := in.Stat()
+		if err != nil {
+			return nil, fmt.Errorf("unable to get input file info: %w", err)
+		}
 
-	if inInfo.Mode()&os.ModeNamedPipe != 0 || term.IsTerminal(int(in.Fd())) {
-		if err := readPipedInput(in, fields); err != nil {
-			return nil, fmt.Errorf("error reading piped input: %w", err)
-		}
-		form.completed = true
-		return form, nil
-	}
-
-	groups := make(map[uint][]*FormField)
-	for _, f := range fields {
-		if err := f.ValidateConfig(); err != nil {
-			return nil, fmt.Errorf("invalid field config: %w", err)
-		}
-		if groups[f.Group] == nil {
-			groups[f.Group] = []*FormField{}
-		}
-		groups[f.Group] = append(groups[f.Group], f)
-	}
-	var hg []*huh.Group
-	var addColumn bool
-	for _, g := range groups {
-		var hf []huh.Field
-		for _, field := range g {
-			height := strings.Count(field.Description, "\n") + strings.Count(field.Title, "\n")
-			switch field.Type {
-			case PromptTypeText, PromptTypeMasked:
-				masked := field.Type == PromptTypeMasked
-				hf = append(hf, textHuhField(field, masked).WithHeight(height))
-			case PromptTypeMultiline:
-				hf = append(hf, multilineHuhField(field).WithHeight(height))
-			case PromptTypeConfirm:
-				hf = append(hf, confirmHuhField(field).WithHeight(height))
-			default:
-				return nil, fmt.Errorf("unknown field type: %v", field.Type)
+		if inInfo.Mode()&os.ModeNamedPipe != 0 || term.IsTerminal(int(in.Fd())) {
+			if err := readPipedInput(in, fields); err != nil {
+				return nil, fmt.Errorf("error reading piped input: %w", err)
 			}
+			form.completed = true
+			return form, nil
 		}
-		if len(hf) > 0 {
-			hg = append(hg, huh.NewGroup(hf...))
-			addColumn = addColumn || len(hf) > 3
-		}
+		programOpts = append(programOpts, tea.WithInput(in))
 	}
-	accessibleMode := os.Getenv("TUI_ACCESSIBLE") != ""
+	if out != nil {
+		programOpts = append(programOpts, tea.WithOutput(out))
+	}
+
+	hg, err := fieldsToHuhGroups(fields)
+	if err != nil {
+		return nil, fmt.Errorf("unable to convert form groups: %w", err)
+	}
+
 	hf := huh.NewForm(hg...).
-		WithProgramOptions(tea.WithInput(in), tea.WithOutput(out)).
-		WithTheme(styles.HuhTheme()).
-		WithAccessible(accessibleMode)
-	hf.SubmitCmd = SubmitMsg
-	hf.CancelCmd = tea.Quit
-	if addColumn {
-		hf = hf.WithLayout(huh.LayoutColumns(2))
+		WithProgramOptions(programOpts...).
+		WithTheme(theme.HuhTheme()).
+		WithAccessible(accessibleMode())
+	if len(fields) > 5 {
+		hf = hf.WithLayout(huh.LayoutColumns(2)) // TODO: make this configurable or auto-dynamic
 	}
 	form.form = hf
 	return form, nil
+}
+
+// NewFormView creates a new form view that can be used in the tuikit container.
+func NewFormView(
+	state *types.RenderState,
+	fields ...*FormField,
+) (*Form, error) {
+	hg, err := fieldsToHuhGroups(fields)
+	if err != nil {
+		return nil, fmt.Errorf("unable to convert form groups: %w", err)
+	}
+	hf := huh.NewForm(hg...).
+		WithTheme(state.Theme.HuhTheme()).
+		WithAccessible(accessibleMode()).
+		WithWidth(state.ContentWidth).
+		WithHeight(state.ContentHeight).
+		WithShowHelp(true)
+	hf.SubmitCmd = types.Submit
+	hf.CancelCmd = tea.Quit
+	if len(fields) > 5 {
+		hf = hf.WithLayout(huh.LayoutColumns(2)) // TODO: make this configurable or auto-dynamic
+	}
+	return &Form{
+		fields: fields,
+		theme:  *state.Theme,
+		form:   hf,
+	}, nil
 }
 
 func (f *Form) FindByKey(key string) *FormField {
@@ -212,7 +224,7 @@ func (f *Form) Completed() bool {
 
 func (f *Form) Init() tea.Cmd {
 	if f.completed {
-		printFieldsSummary(f.fields, f.styles)
+		printFieldsSummary(f.fields, f.theme)
 		return tea.Quit
 	}
 	return f.form.Init()
@@ -223,23 +235,24 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return f.err.Update(msg)
 	}
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		//nolint:exhaustive
-		switch msg.Type {
-		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
-			return f.form, tea.Quit
-		}
-	case SubmitMsgType:
+	//nolint:gocritic
+	switch msg.(type) {
+	case types.SubmitMsg:
 		f.completed = true
-		return f.form, tea.Quit
+		if f.Callback != nil {
+			if err := f.Callback(f.ValueMap()); err != nil {
+				f.err = NewErrorView(err, f.theme)
+				return f, nil
+			}
+		}
+		return f.form, types.ReplaceView
 	}
 
 	model, cmd := f.form.Update(msg)
 	var ok bool
 	f.form, ok = model.(*huh.Form)
 	if !ok {
-		f.err = NewErrorView(fmt.Errorf("unable to cast form model to huh.Form"), f.styles)
+		f.err = NewErrorView(fmt.Errorf("unable to cast form model to huh.Form"), f.theme)
 		return f, cmd
 	}
 	return f.form, cmd
@@ -263,6 +276,41 @@ func (f *Form) ShowFooter() bool {
 
 func (f *Form) Type() string {
 	return FormViewType
+}
+
+func fieldsToHuhGroups(fields []*FormField) ([]*huh.Group, error) {
+	groups := make(map[uint][]*FormField)
+	for _, f := range fields {
+		if err := f.ValidateConfig(); err != nil {
+			return nil, fmt.Errorf("invalid field config: %w", err)
+		}
+		if groups[f.Group] == nil {
+			groups[f.Group] = []*FormField{}
+		}
+		groups[f.Group] = append(groups[f.Group], f)
+	}
+	var hg []*huh.Group
+	for _, g := range groups {
+		var hf []huh.Field
+		for _, field := range g {
+			height := strings.Count(field.Description, "\n") + strings.Count(field.Title, "\n")
+			switch field.Type {
+			case PromptTypeText, PromptTypeMasked:
+				masked := field.Type == PromptTypeMasked
+				hf = append(hf, textHuhField(field, masked).WithHeight(height))
+			case PromptTypeMultiline:
+				hf = append(hf, multilineHuhField(field).WithHeight(height))
+			case PromptTypeConfirm:
+				hf = append(hf, confirmHuhField(field).WithHeight(height))
+			default:
+				return nil, fmt.Errorf("unknown field type: %v", field.Type)
+			}
+		}
+		if len(hf) > 0 {
+			hg = append(hg, huh.NewGroup(hf...))
+		}
+	}
+	return hg, nil
 }
 
 func readPipedInput(in *os.File, fields []*FormField) error {
@@ -315,7 +363,7 @@ func textHuhField(field *FormField, masked bool) huh.Field {
 	} else if field.Default != "" {
 		txt = txt.Placeholder(field.Default)
 	}
-	if field.ValidationExpr != "" {
+	if field.ValidationExpr != "" || field.Required {
 		txt = txt.Validate(field.ValidateValue)
 	}
 	return txt
@@ -349,4 +397,8 @@ func confirmHuhField(field *FormField) huh.Field {
 		txt = txt.Description(field.Description)
 	}
 	return txt
+}
+
+func accessibleMode() bool {
+	return os.Getenv("TUI_ACCESSIBLE") != ""
 }

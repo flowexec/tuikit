@@ -7,6 +7,13 @@ executables:
     aliases: [pc, validate]
     description: Run the repo's pre-commit script
     exec:
+      params:
+        - envKey: COLORFGBG
+          text: 15;0
+        - envKey: COLORTERM
+          text: truecolor
+        - envKey: TERM
+          text: xterm-256color
       dir: //
       cmd: |
         go fmt ./...

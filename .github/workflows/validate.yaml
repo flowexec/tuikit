@@ -15,7 +15,7 @@ jobs:
     env:
       GO111MODULE: on
       COLORTERM: "truecolor"
-      COLORFGBG: "7;0"
+      COLORFGBG: "15;0"
       TERM: "xterm-256color"
     steps:
       - name: Checkout Source
@@ -68,7 +68,7 @@ jobs:
       #
       - name: Run coverage
         # TODO: Add -race flag when the container becomes thread safe
-        run: go test ./... -coverprofile=coverage.txt
+        run: go test ./... -coverprofile=coverage.txt -covermode=atomic
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

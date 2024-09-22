@@ -2,6 +2,7 @@ package views
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -116,6 +117,8 @@ type Form struct {
 	theme     styles.Theme
 	err       *ErrorView
 	completed bool
+
+	in, out *os.File
 }
 
 // NewForm creates a new form model that can be run in a Bubble Tea program. It includes some extra handling
@@ -133,6 +136,8 @@ func NewForm(
 	form := &Form{
 		fields: fields,
 		theme:  theme,
+		in:     in,
+		out:    out,
 	}
 
 	programOpts := make([]tea.ProgramOption, 0)
@@ -142,7 +147,7 @@ func NewForm(
 			return nil, fmt.Errorf("unable to get input file info: %w", err)
 		}
 
-		if inInfo.Mode()&os.ModeNamedPipe != 0 || term.IsTerminal(int(in.Fd())) {
+		if inInfo.Mode()&os.ModeNamedPipe != 0 || !term.IsTerminal(int(in.Fd())) {
 			if err := readPipedInput(in, fields); err != nil {
 				return nil, fmt.Errorf("error reading piped input: %w", err)
 			}
@@ -223,10 +228,6 @@ func (f *Form) Completed() bool {
 }
 
 func (f *Form) Init() tea.Cmd {
-	if f.completed {
-		printFieldsSummary(f.fields, f.theme)
-		return tea.Quit
-	}
 	return f.form.Init()
 }
 
@@ -278,6 +279,14 @@ func (f *Form) Type() string {
 	return FormViewType
 }
 
+func (f *Form) Run(ctx context.Context) error {
+	if f.completed {
+		printFieldsSummary(f.out, f.fields, f.theme)
+		return nil
+	}
+	return f.form.RunWithContext(ctx)
+}
+
 func fieldsToHuhGroups(fields []*FormField) ([]*huh.Group, error) {
 	groups := make(map[uint][]*FormField)
 	for _, f := range fields {
@@ -316,9 +325,11 @@ func fieldsToHuhGroups(fields []*FormField) ([]*huh.Group, error) {
 func readPipedInput(in *os.File, fields []*FormField) error {
 	reader := bufio.NewReader(in)
 	for _, field := range fields {
-		line, err := reader.ReadString('\r')
-		if err != nil && errors.Is(err, io.EOF) {
+		line, err := reader.ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
 			return fmt.Errorf("error reading input line: %w", err)
+		} else if line == "" && errors.Is(err, io.EOF) {
+			return fmt.Errorf("not enough input lines")
 		}
 		if !field.Required && line == "" && field.Default != "" {
 			line = field.Default
@@ -330,7 +341,10 @@ func readPipedInput(in *os.File, fields []*FormField) error {
 	return nil
 }
 
-func printFieldsSummary(fields []*FormField, styles styles.Theme) {
+func printFieldsSummary(out *os.File, fields []*FormField, styles styles.Theme) {
+	if out == nil {
+		return
+	}
 	groupedFields := make(map[uint][]*FormField)
 	for _, field := range fields {
 		if groupedFields[field.Group] == nil {
@@ -340,9 +354,9 @@ func printFieldsSummary(fields []*FormField, styles styles.Theme) {
 	}
 	for _, group := range groupedFields {
 		for _, field := range group {
-			fmt.Println(styles.RenderKeyAndValueWithBreak(field.Title, field.Value()))
+			_, _ = fmt.Fprintln(out, styles.RenderKeyAndValueWithBreak(field.Title, field.Value()))
 		}
-		fmt.Println()
+		_, _ = fmt.Fprintln(out)
 	}
 }
 

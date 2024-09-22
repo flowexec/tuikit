@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,6 +34,7 @@ type Container struct {
 
 	previousView, currentView, nextView View
 	showHelp                            bool
+	finalizing                          *chan struct{}
 }
 
 type ContainerOptions func(*Container)
@@ -82,7 +82,7 @@ func NewContainer(
 func (c *Container) Start() error {
 	go func() {
 		_, err := c.program.Run()
-		if err != nil {
+		if err != nil && !errors.Is(err, tea.ErrProgramKilled) {
 			c.HandleError(err)
 		}
 		c.cancel()
@@ -102,6 +102,9 @@ func (c *Container) Start() error {
 
 func (c *Container) WaitForExit() {
 	<-c.ctx.Done()
+	if c.finalizing != nil {
+		<-*c.finalizing
+	}
 }
 
 func (c *Container) HandleError(err error) {
@@ -254,17 +257,14 @@ func (c *Container) Ready() bool {
 	return c.SizeSet()
 }
 
-func (c *Container) Shutdown() {
-	// exit the program
-	_ = c.program.Suspend()
-	c.Update(tea.Quit())
-
-	// clear the screen
-	cmd := exec.Command("clear")
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		panic("unable to clear screen")
+func (c *Container) Shutdown(finalizers ...func()) {
+	fin := make(chan struct{})
+	c.finalizing = &fin
+	c.program.program.Kill()
+	for _, f := range finalizers {
+		f()
 	}
+	close(fin)
 }
 
 func (c *Container) Height() int {
@@ -414,8 +414,11 @@ func WithOutput(out io.Writer) ContainerOptions {
 	}
 }
 
-func WithTheme(styles styles.Theme) ContainerOptions {
+func WithTheme(theme styles.Theme) ContainerOptions {
 	return func(c *Container) {
-		c.render.Theme = &styles
+		if c.render == nil {
+			c.render = &types.RenderState{}
+		}
+		c.render.Theme = &theme
 	}
 }

@@ -3,15 +3,20 @@ package styles
 import (
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
 )
 
-type NoticeLevel string
+type OutputLevel string
 
 const (
-	NoticeLevelSuccess NoticeLevel = "success"
-	NoticeLevelInfo    NoticeLevel = "info"
-	NoticeLevelWarning NoticeLevel = "warning"
-	NoticeLevelError   NoticeLevel = "error"
+	OutputLevelSuccess OutputLevel = "success"
+	OutputLevelNotice  OutputLevel = "notice"
+	OutputLevelInfo    OutputLevel = "info"
+	OutputLevelWarning OutputLevel = "warning"
+	OutputLevelError   OutputLevel = "error"
+
+	// LogNoticeLevel is a custom log level for notices.
+	LogNoticeLevel = log.InfoLevel + 1
 )
 
 type Theme struct {

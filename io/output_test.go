@@ -76,10 +76,10 @@ func TestStdErrWriter_WriteText(t *testing.T) {
 
 	input := []byte("line 1\nline 2\nline 3\n")
 	mockLogger.EXPECT().LogMode().Return(io.Text).AnyTimes()
-	mockLogger.EXPECT().PlainTextError("line 1")
-	mockLogger.EXPECT().PlainTextError("line 2")
-	mockLogger.EXPECT().PlainTextError("line 3")
-	mockLogger.EXPECT().PlainTextError("")
+	mockLogger.EXPECT().PlainTextNotice("line 1")
+	mockLogger.EXPECT().PlainTextNotice("line 2")
+	mockLogger.EXPECT().PlainTextNotice("line 3")
+	mockLogger.EXPECT().PlainTextNotice("")
 
 	_, err := writer.Write(input)
 	if err != nil {
@@ -98,10 +98,10 @@ func TestStdErrWriter_WriteLogFmt(t *testing.T) {
 
 	input := []byte("line 1\nline 2\nline 3\nline 4")
 	mockLogger.EXPECT().LogMode().Return(io.Logfmt).AnyTimes()
-	mockLogger.EXPECT().Errorx("line 1", fields...)
-	mockLogger.EXPECT().Errorx("line 2", fields...)
-	mockLogger.EXPECT().Errorx("line 3", fields...)
-	mockLogger.EXPECT().Errorx("line 4", fields...)
+	mockLogger.EXPECT().Noticex("line 1", fields...)
+	mockLogger.EXPECT().Noticex("line 2", fields...)
+	mockLogger.EXPECT().Noticex("line 3", fields...)
+	mockLogger.EXPECT().Noticex("line 4", fields...)
 
 	_, err := writer.Write(input)
 	if err != nil {

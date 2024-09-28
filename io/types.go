@@ -28,12 +28,14 @@ type Logger interface {
 	LogMode() LogMode
 
 	PlainTextInfo(msg string)
+	PlainTextNotice(msg string)
 	PlainTextSuccess(msg string)
 	PlainTextError(msg string)
 	PlainTextDebug(msg string)
 	PlainTextWarn(msg string)
 
 	Infof(msg string, args ...any)
+	Noticef(msg string, args ...any)
 	Debugf(msg string, args ...any)
 	Error(err error, msg string)
 	Errorf(msg string, args ...any)
@@ -41,6 +43,7 @@ type Logger interface {
 	Fatalf(msg string, args ...any)
 
 	Infox(msg string, kv ...any)
+	Noticex(msg string, kv ...any)
 	Debugx(msg string, kv ...any)
 	Errorx(msg string, kv ...any)
 	Warnx(msg string, kv ...any)

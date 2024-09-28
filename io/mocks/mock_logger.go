@@ -227,6 +227,40 @@ func (mr *MockLoggerMockRecorder) LogMode() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogMode", reflect.TypeOf((*MockLogger)(nil).LogMode))
 }
 
+// Noticef mocks base method.
+func (m *MockLogger) Noticef(arg0 string, arg1 ...any) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Noticef", varargs...)
+}
+
+// Noticef indicates an expected call of Noticef.
+func (mr *MockLoggerMockRecorder) Noticef(arg0 any, arg1 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Noticef", reflect.TypeOf((*MockLogger)(nil).Noticef), varargs...)
+}
+
+// Noticex mocks base method.
+func (m *MockLogger) Noticex(arg0 string, arg1 ...any) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Noticex", varargs...)
+}
+
+// Noticex indicates an expected call of Noticex.
+func (mr *MockLoggerMockRecorder) Noticex(arg0 any, arg1 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Noticex", reflect.TypeOf((*MockLogger)(nil).Noticex), varargs...)
+}
+
 // PlainTextDebug mocks base method.
 func (m *MockLogger) PlainTextDebug(arg0 string) {
 	m.ctrl.T.Helper()
@@ -261,6 +295,18 @@ func (m *MockLogger) PlainTextInfo(arg0 string) {
 func (mr *MockLoggerMockRecorder) PlainTextInfo(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlainTextInfo", reflect.TypeOf((*MockLogger)(nil).PlainTextInfo), arg0)
+}
+
+// PlainTextNotice mocks base method.
+func (m *MockLogger) PlainTextNotice(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "PlainTextNotice", arg0)
+}
+
+// PlainTextNotice indicates an expected call of PlainTextNotice.
+func (mr *MockLoggerMockRecorder) PlainTextNotice(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlainTextNotice", reflect.TypeOf((*MockLogger)(nil).PlainTextNotice), arg0)
 }
 
 // PlainTextSuccess mocks base method.

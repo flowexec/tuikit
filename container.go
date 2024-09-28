@@ -358,8 +358,8 @@ func (c *Container) RenderState() *types.RenderState {
 	return c.render
 }
 
-func (c *Container) SetNotice(notice string, lvl styles.NoticeLevel) {
-	c.app.notice = c.render.Theme.RenderNotice(notice, lvl)
+func (c *Container) SetNotice(notice string, lvl styles.OutputLevel) {
+	c.app.notice = c.render.Theme.RenderLevel(notice, lvl)
 }
 
 func (c *Container) SetState(key, val string) {

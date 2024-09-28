@@ -70,15 +70,15 @@ func (w StdErrWriter) Write(p []byte) (n int, err error) {
 		case Hidden:
 			return len(p), nil
 		case Text:
-			w.Logger.PlainTextError(line)
+			w.Logger.PlainTextNotice(line)
 		case JSON, Logfmt:
 			if strings.TrimSpace(line) == "" {
 				continue
 			}
 			if len(w.LogFields) > 0 {
-				w.Logger.Errorx(line, w.LogFields...)
+				w.Logger.Noticex(line, w.LogFields...)
 			} else {
-				w.Logger.Errorf(line)
+				w.Logger.Noticef(line)
 			}
 		default:
 			return len(p), fmt.Errorf("unknown log mode %v", w.LogMode)

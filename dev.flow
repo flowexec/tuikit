@@ -3,8 +3,8 @@ tags:
   - development
 executables:
   - verb: run
-    name: pre-commit
-    aliases: [pc, validate]
+    name: checks
+    aliases: [pre-commit, pc, validate]
     description: Run the repo's pre-commit script
     exec:
       params:
@@ -17,20 +17,20 @@ executables:
       dir: //
       cmd: |
         go fmt ./...
+        go generate ./...
         go mod tidy
         golangci-lint run ./...
         go test ./...
 
-# TODO: fix running of tea programs from within the container
-#  - verb: run
-#    name: sample
-#    description: Run the sample container program
-#    exec:
-#      dir: //
-#      args:
-#        - envKey: VIEW
-#          pos: 1
-#          default: frame
-#      logMode: text
-#      cmd: go run ./sample --view $VIEW
-#
+  - verb: run
+    name: sample
+    description: Run the sample container program
+    visibility: hidden # TODO: fix running of tea programs from within the container
+    exec:
+      dir: //
+      args:
+        - envKey: VIEW
+          pos: 1
+          default: frame
+      logMode: text
+      cmd: go run ./sample --view $VIEW

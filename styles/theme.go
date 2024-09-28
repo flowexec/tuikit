@@ -44,6 +44,10 @@ func (t Theme) RenderInfo(text string) string {
 	return lipgloss.NewStyle().Foreground(t.InfoColor).Render(text)
 }
 
+func (t Theme) RenderNotice(text string) string {
+	return lipgloss.NewStyle().Foreground(t.EmphasisColor).Render(text)
+}
+
 func (t Theme) RenderSuccess(text string) string {
 	return lipgloss.NewStyle().Foreground(t.SuccessColor).Render(text)
 }
@@ -64,22 +68,24 @@ func (t Theme) RenderUnknown(text string) string {
 	return lipgloss.NewStyle().Foreground(t.Gray).Render(text)
 }
 
-func (t Theme) RenderNotice(notice string, lvl NoticeLevel) string {
-	if notice == "" {
+func (t Theme) RenderLevel(str string, lvl OutputLevel) string {
+	if str == "" {
 		return ""
 	}
 
 	switch lvl {
-	case NoticeLevelSuccess:
-		return t.RenderSuccess(notice)
-	case NoticeLevelInfo:
-		return t.RenderInfo(notice)
-	case NoticeLevelWarning:
-		return t.RenderWarning(notice)
-	case NoticeLevelError:
-		return t.RenderError(notice)
+	case OutputLevelSuccess:
+		return t.RenderSuccess(str)
+	case OutputLevelNotice:
+		return t.RenderNotice(str)
+	case OutputLevelInfo:
+		return t.RenderInfo(str)
+	case OutputLevelWarning:
+		return t.RenderWarning(str)
+	case OutputLevelError:
+		return t.RenderError(str)
 	default:
-		return t.RenderUnknown(notice)
+		return t.RenderUnknown(str)
 	}
 }
 
@@ -192,10 +198,11 @@ func (t Theme) LoggerStyles() *log.Styles {
 	baseStyles.Timestamp = baseStyles.Timestamp.Foreground(t.Gray)
 	baseStyles.Levels = map[log.Level]lipgloss.Style{
 		log.InfoLevel:  baseStyles.Levels[log.InfoLevel].Foreground(t.InfoColor).SetString("INF"),
+		LogNoticeLevel: baseStyles.Levels[LogNoticeLevel].Foreground(t.WarningColor).SetString("NTC"),
 		log.WarnLevel:  baseStyles.Levels[log.WarnLevel].Foreground(t.WarningColor).SetString("WRN"),
 		log.ErrorLevel: baseStyles.Levels[log.ErrorLevel].Foreground(t.ErrorColor).SetString("ERR"),
 		log.DebugLevel: baseStyles.Levels[log.DebugLevel].Foreground(t.EmphasisColor).SetString("DBG"),
-		log.FatalLevel: baseStyles.Levels[log.FatalLevel].Foreground(t.EmphasisColor).SetString("ERR"),
+		log.FatalLevel: baseStyles.Levels[log.FatalLevel].Foreground(t.ErrorColor).SetString("ERR"),
 	}
 	baseStyles.Message = baseStyles.Message.Foreground(t.BodyColor)
 	baseStyles.Key = baseStyles.Key.Foreground(t.SecondaryColor)

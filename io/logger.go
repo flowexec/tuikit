@@ -133,6 +133,20 @@ func (l *StandardLogger) Infof(msg string, args ...any) {
 	}
 }
 
+func (l *StandardLogger) Noticef(msg string, args ...any) {
+	l.syncLoggerFormat()
+	if l.mode == Text {
+		l.PlainTextNotice(fmt.Sprintf(msg, args...))
+		return
+	} else if l.mode == Hidden {
+		return
+	}
+	l.stdOutHandler.With().Log(styles.LogNoticeLevel, msg, args...)
+	if l.archiveHandler != nil {
+		l.archiveHandler.Errorf(msg, args...)
+	}
+}
+
 func (l *StandardLogger) Debugf(msg string, args ...any) {
 	l.syncLoggerFormat()
 	if l.mode == Text {
@@ -214,6 +228,17 @@ func (l *StandardLogger) Infox(msg string, kv ...any) {
 	}
 }
 
+func (l *StandardLogger) Noticex(msg string, kv ...any) {
+	if l.mode == Hidden {
+		return
+	}
+	l.syncLoggerFormat()
+	l.stdOutHandler.With().Log(styles.LogNoticeLevel, msg, kv...)
+	if l.archiveHandler != nil {
+		l.archiveHandler.Errorf(msg, kv...)
+	}
+}
+
 func (l *StandardLogger) Debugx(msg string, kv ...any) {
 	if l.mode == Hidden {
 		return
@@ -260,6 +285,16 @@ func (l *StandardLogger) PlainTextInfo(msg string) {
 		return
 	}
 	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderInfo(msg))
+	if l.archiveFile != nil {
+		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	}
+}
+
+func (l *StandardLogger) PlainTextNotice(msg string) {
+	if l.stdOutHandler.GetLevel() < log.InfoLevel {
+		return
+	}
+	_, _ = fmt.Fprintln(l.stdOutFile, ""+l.style.RenderNotice(msg))
 	if l.archiveFile != nil {
 		_, _ = fmt.Fprintln(l.archiveFile, msg)
 	}

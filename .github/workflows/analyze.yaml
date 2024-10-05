@@ -1,0 +1,38 @@
+name: Static Analysis
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+  schedule:
+    - cron: "00 5 * * SAT"
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "^1.23"
+      - name: Install tools
+        run: |
+          go install go.uber.org/mock/mockgen@v0.4.0
+      - name: Format and generate Code
+        run: |
+          go mod tidy
+          go generate ./...
+      - name: Verify clean state
+        run: |
+          if [[ `git status . --porcelain ]]; then
+            echo "Uncommitted changes found"
+            git diff --color --compact-summary
+            exit 1
+          else
+            echo "No uncommitted changes"
+          fi
+
+  analyze:
+    uses: jahvon/cicd/.github/workflows/go-analyze.yaml@main

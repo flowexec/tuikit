@@ -1,13 +1,11 @@
 name: Static Analysis
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
 
-  schedule:
-    - cron: "00 5 * * SAT"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   clean:
@@ -36,3 +34,9 @@ jobs:
 
   analyze:
     uses: jahvon/cicd/.github/workflows/go-analyze.yaml@main
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
+      security-events: write
+      actions: read

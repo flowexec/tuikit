@@ -1,0 +1,19 @@
+name: Static Analysis
+
+on:
+  push:
+    branches:
+      - main
+
+  schedule:
+    - cron: "00 5 * * SAT"
+
+jobs:
+  analyze:
+    uses: jahvon/cicd/.github/workflows/go-analyze.yaml@main
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
+      security-events: write
+      actions: read

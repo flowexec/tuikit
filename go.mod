@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20240919170804-a4978c8e603a
-	github.com/jahvon/glamour v0.8.1-patch1
+	github.com/jahvon/glamour v0.8.1-patch3
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a
 	go.uber.org/mock v0.4.0

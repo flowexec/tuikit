@@ -20,21 +20,25 @@ const (
 )
 
 type Theme struct {
+	Name string
+	// see https://github.com/alecthomas/chroma
+	ChromaCodeStyle string
+
 	SpinnerType spinner.Spinner
 
-	BodyColor      lipgloss.AdaptiveColor
-	EmphasisColor  lipgloss.AdaptiveColor
-	BorderColor    lipgloss.AdaptiveColor
-	PrimaryColor   lipgloss.AdaptiveColor
-	SecondaryColor lipgloss.AdaptiveColor
-	TertiaryColor  lipgloss.AdaptiveColor
-	SuccessColor   lipgloss.AdaptiveColor
-	WarningColor   lipgloss.AdaptiveColor
-	ErrorColor     lipgloss.AdaptiveColor
-	InfoColor      lipgloss.AdaptiveColor
-	White          lipgloss.AdaptiveColor
-	Gray           lipgloss.AdaptiveColor
-	Black          lipgloss.AdaptiveColor
+	BodyColor      lipgloss.Color
+	EmphasisColor  lipgloss.Color
+	BorderColor    lipgloss.Color
+	PrimaryColor   lipgloss.Color
+	SecondaryColor lipgloss.Color
+	TertiaryColor  lipgloss.Color
+	SuccessColor   lipgloss.Color
+	WarningColor   lipgloss.Color
+	ErrorColor     lipgloss.Color
+	InfoColor      lipgloss.Color
+	White          lipgloss.Color
+	Gray           lipgloss.Color
+	Black          lipgloss.Color
 }
 
 type templateData struct {
@@ -56,17 +60,17 @@ type templateData struct {
 
 func (t Theme) markdownTemplateData() templateData {
 	return templateData{
-		BodyColor:     t.BodyColor.Dark,
-		TitleColor:    t.EmphasisColor.Dark,
-		HeadingColor:  t.PrimaryColor.Dark,
-		LinkColor:     t.TertiaryColor.Dark,
-		QuoteColor:    t.Gray.Dark,
-		ItemColor:     t.BodyColor.Dark,
-		EmphasisColor: t.EmphasisColor.Dark,
-		DividerColor:  t.BodyColor.Dark,
-		CodeTextColor: t.White.Dark,
-		CodeBgColor:   t.Gray.Light,
-		DarkFgColor:   t.Black.Dark,
-		ChromaTheme:   "friendly",
+		BodyColor:     string(t.BodyColor),
+		TitleColor:    string(t.EmphasisColor),
+		HeadingColor:  string(t.PrimaryColor),
+		LinkColor:     string(t.TertiaryColor),
+		QuoteColor:    string(t.Gray),
+		ItemColor:     string(t.BodyColor),
+		EmphasisColor: string(t.EmphasisColor),
+		DividerColor:  string(t.BodyColor),
+		CodeTextColor: string(t.White),
+		CodeBgColor:   string(t.Gray),
+		DarkFgColor:   string(t.Black),
+		ChromaTheme:   t.ChromaCodeStyle,
 	}
 }

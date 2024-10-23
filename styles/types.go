@@ -20,25 +20,24 @@ const (
 )
 
 type Theme struct {
-	Name string
+	Name        string          `json:"-" yaml:"-"`
+	SpinnerType spinner.Spinner `json:"-" yaml:"-"`
 	// see https://github.com/alecthomas/chroma
-	ChromaCodeStyle string
+	ChromaCodeStyle string `json:"chromaCodeStyle" yaml:"chromaCodeStyle"`
 
-	SpinnerType spinner.Spinner
-
-	BodyColor      lipgloss.Color
-	EmphasisColor  lipgloss.Color
-	BorderColor    lipgloss.Color
-	PrimaryColor   lipgloss.Color
-	SecondaryColor lipgloss.Color
-	TertiaryColor  lipgloss.Color
-	SuccessColor   lipgloss.Color
-	WarningColor   lipgloss.Color
-	ErrorColor     lipgloss.Color
-	InfoColor      lipgloss.Color
-	White          lipgloss.Color
-	Gray           lipgloss.Color
-	Black          lipgloss.Color
+	BodyColor      lipgloss.Color `json:"bodyColor" yaml:"bodyColor"`
+	EmphasisColor  lipgloss.Color `json:"emphasisColor" yaml:"emphasisColor"`
+	BorderColor    lipgloss.Color `json:"borderColor" yaml:"borderColor"`
+	PrimaryColor   lipgloss.Color `json:"primaryColor" yaml:"primaryColor"`
+	SecondaryColor lipgloss.Color `json:"secondaryColor" yaml:"secondaryColor"`
+	TertiaryColor  lipgloss.Color `json:"tertiaryColor" yaml:"tertiaryColor"`
+	SuccessColor   lipgloss.Color `json:"successColor" yaml:"successColor"`
+	WarningColor   lipgloss.Color `json:"warningColor" yaml:"warningColor"`
+	ErrorColor     lipgloss.Color `json:"errorColor" yaml:"errorColor"`
+	InfoColor      lipgloss.Color `json:"infoColor" yaml:"infoColor"`
+	White          lipgloss.Color `json:"white" yaml:"white"`
+	Gray           lipgloss.Color `json:"gray" yaml:"gray"`
+	Black          lipgloss.Color `json:"black" yaml:"black"`
 }
 
 type templateData struct {

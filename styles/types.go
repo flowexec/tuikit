@@ -25,19 +25,19 @@ type Theme struct {
 	// see https://github.com/alecthomas/chroma
 	ChromaCodeStyle string `json:"chromaCodeStyle" yaml:"chromaCodeStyle"`
 
-	BodyColor      lipgloss.Color `json:"bodyColor" yaml:"bodyColor"`
-	EmphasisColor  lipgloss.Color `json:"emphasisColor" yaml:"emphasisColor"`
-	BorderColor    lipgloss.Color `json:"borderColor" yaml:"borderColor"`
-	PrimaryColor   lipgloss.Color `json:"primaryColor" yaml:"primaryColor"`
+	BodyColor      lipgloss.Color `json:"bodyColor"      yaml:"bodyColor"`
+	EmphasisColor  lipgloss.Color `json:"emphasisColor"  yaml:"emphasisColor"`
+	BorderColor    lipgloss.Color `json:"borderColor"    yaml:"borderColor"`
+	PrimaryColor   lipgloss.Color `json:"primaryColor"   yaml:"primaryColor"`
 	SecondaryColor lipgloss.Color `json:"secondaryColor" yaml:"secondaryColor"`
-	TertiaryColor  lipgloss.Color `json:"tertiaryColor" yaml:"tertiaryColor"`
-	SuccessColor   lipgloss.Color `json:"successColor" yaml:"successColor"`
-	WarningColor   lipgloss.Color `json:"warningColor" yaml:"warningColor"`
-	ErrorColor     lipgloss.Color `json:"errorColor" yaml:"errorColor"`
-	InfoColor      lipgloss.Color `json:"infoColor" yaml:"infoColor"`
-	White          lipgloss.Color `json:"white" yaml:"white"`
-	Gray           lipgloss.Color `json:"gray" yaml:"gray"`
-	Black          lipgloss.Color `json:"black" yaml:"black"`
+	TertiaryColor  lipgloss.Color `json:"tertiaryColor"  yaml:"tertiaryColor"`
+	SuccessColor   lipgloss.Color `json:"successColor"   yaml:"successColor"`
+	WarningColor   lipgloss.Color `json:"warningColor"   yaml:"warningColor"`
+	ErrorColor     lipgloss.Color `json:"errorColor"     yaml:"errorColor"`
+	InfoColor      lipgloss.Color `json:"infoColor"      yaml:"infoColor"`
+	White          lipgloss.Color `json:"white"          yaml:"white"`
+	Gray           lipgloss.Color `json:"gray"           yaml:"gray"`
+	Black          lipgloss.Color `json:"black"          yaml:"black"`
 }
 
 type templateData struct {

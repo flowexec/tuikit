@@ -3,7 +3,6 @@ package types
 import "fmt"
 
 const (
-	EntityFormatList     Format = "list"
 	EntityFormatJSON     Format = "json"
 	EntityFormatYAML     Format = "yaml"
 	EntityFormatDocument Format = "md"

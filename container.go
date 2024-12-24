@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
 
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 	"github.com/jahvon/tuikit/types"
 	"github.com/jahvon/tuikit/views"
 )
@@ -72,8 +72,7 @@ func NewContainer(
 		c.render = &types.RenderState{}
 	}
 	if c.render.Theme == nil {
-		def := styles.EverforestTheme()
-		c.render.Theme = &def
+		c.render.Theme = themes.EverforestTheme()
 	}
 
 	return c, nil
@@ -112,24 +111,25 @@ func (c *Container) HandleError(err error) {
 		return
 	}
 
-	cErr := c.SetView(views.NewErrorView(err, *c.render.Theme))
+	cErr := c.SetView(views.NewErrorView(err, c.render.Theme))
 	if cErr != nil {
 		panic(err)
 	}
 }
 
-func (c *Container) Init() tea.Cmd {
+func (c *Container) Init() (tea.Model, tea.Cmd) {
 	cmds := make([]tea.Cmd, 0)
 	if c.currentView == nil {
 		c.currentView = c.loadingView()
 	}
+	cur, cmd := c.CurrentView().Init()
 	cmds = append(
 		cmds,
 		tea.SetWindowTitle(c.app.Name),
 		c.doTick(),
-		c.CurrentView().Init(),
+		cmd,
 	)
-	return tea.Batch(cmds...)
+	return cur, tea.Batch(cmds...)
 }
 
 //nolint:gocognit,funlen
@@ -144,7 +144,7 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Width:         msg.Width,
 			Height:        msg.Height,
 			ContentWidth:  msg.Width,
-			ContentHeight: msg.Height - (styles.HeaderHeight + styles.FooterHeight),
+			ContentHeight: msg.Height - (themes.HeaderHeight + themes.FooterHeight),
 			Theme:         c.render.Theme,
 		}
 		if c.CurrentView().Type() == views.FormViewType {
@@ -358,7 +358,7 @@ func (c *Container) RenderState() *types.RenderState {
 	return c.render
 }
 
-func (c *Container) SetNotice(notice string, lvl styles.OutputLevel) {
+func (c *Container) SetNotice(notice string, lvl themes.OutputLevel) {
 	c.app.notice = c.render.Theme.RenderLevel(notice, lvl)
 }
 
@@ -392,7 +392,7 @@ func WithInitialTermSize(width, height int) ContainerOptions {
 		c.render.Width = width
 		c.render.Height = height
 		c.render.ContentWidth = width
-		c.render.ContentHeight = height - (styles.HeaderHeight + styles.FooterHeight)
+		c.render.ContentHeight = height - (themes.HeaderHeight + themes.FooterHeight)
 	}
 }
 
@@ -414,11 +414,11 @@ func WithOutput(out io.Writer) ContainerOptions {
 	}
 }
 
-func WithTheme(theme styles.Theme) ContainerOptions {
+func WithTheme(theme themes.Theme) ContainerOptions {
 	return func(c *Container) {
 		if c.render == nil {
 			c.render = &types.RenderState{}
 		}
-		c.render.Theme = &theme
+		c.render.Theme = theme
 	}
 }

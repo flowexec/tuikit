@@ -1,7 +1,7 @@
 package views
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea/v2"
 )
 
 const FrameViewType = "frame"
@@ -10,7 +10,7 @@ type FrameView struct {
 	model tea.Model
 }
 
-func (v *FrameView) Init() tea.Cmd {
+func (v *FrameView) Init() (tea.Model, tea.Cmd) {
 	return v.model.Init()
 }
 

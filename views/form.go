@@ -15,7 +15,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"golang.org/x/term"
 
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 	"github.com/jahvon/tuikit/types"
 )
 
@@ -114,7 +114,7 @@ type Form struct {
 
 	fields    []*FormField
 	form      *huh.Form
-	theme     styles.Theme
+	theme     themes.Theme
 	err       *ErrorView
 	completed bool
 
@@ -125,7 +125,7 @@ type Form struct {
 // for reading piped input.
 // This form should NOT be used in a tuikit container. Instead, use NewFormView.
 func NewForm(
-	theme styles.Theme,
+	theme themes.Theme,
 	in *os.File,
 	out *os.File,
 	fields ...*FormField,
@@ -341,7 +341,7 @@ func readPipedInput(in *os.File, fields []*FormField) error {
 	return nil
 }
 
-func printFieldsSummary(out *os.File, fields []*FormField, styles styles.Theme) {
+func printFieldsSummary(out *os.File, fields []*FormField, styles themes.Theme) {
 	if out == nil {
 		return
 	}

@@ -3,9 +3,9 @@ package types
 import (
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea/v2"
 
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 )
 
 var TickTime = time.Millisecond * 250
@@ -33,5 +33,5 @@ type RenderState struct {
 	Height        int
 	ContentWidth  int
 	ContentHeight int
-	Theme         *styles.Theme
+	Theme         themes.Theme
 }

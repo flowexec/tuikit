@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/bubbles/v2/list"
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
 
 	"github.com/jahvon/tuikit/io"
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 	"github.com/jahvon/tuikit/types"
 )
 
@@ -28,7 +28,7 @@ type LogArchiveView struct {
 	err         *ErrorView
 
 	width, height int
-	styles        styles.Theme
+	styles        themes.Theme
 }
 
 func NewLogArchiveView(state *types.RenderState, archiveDir string, lastEntry bool) *LogArchiveView {
@@ -36,14 +36,14 @@ func NewLogArchiveView(state *types.RenderState, archiveDir string, lastEntry bo
 	entries, err := io.ListArchiveEntries(archiveDir)
 	var errView *ErrorView
 	if err != nil {
-		errView = NewErrorView(err, *state.Theme)
+		errView = NewErrorView(err, state.Theme)
 		return &LogArchiveView{err: errView}
 	}
 	slices.Reverse(entries)
 	for _, entry := range entries {
 		items = append(items, entry)
 	}
-	delegate := &logArchiveDelegate{styles: *state.Theme}
+	delegate := &logArchiveDelegate{styles: state.Theme}
 	model := list.New(items, delegate, state.Width, state.Height)
 	model.SetShowTitle(false)
 	model.SetShowHelp(false)
@@ -63,7 +63,7 @@ func NewLogArchiveView(state *types.RenderState, archiveDir string, lastEntry bo
 		items:         items,
 		width:         state.ContentWidth,
 		height:        state.ContentHeight,
-		styles:        *state.Theme,
+		styles:        state.Theme,
 	}
 }
 
@@ -169,7 +169,7 @@ func (v *LogArchiveView) View() string {
 		return v.err.View()
 	default:
 		v.model.SetSize(v.width, v.height)
-		style := v.styles.Box().Width(v.width)
+		style := v.styles.BoxStyle().Width(v.width)
 		content = style.Render(v.model.View())
 	}
 	return content
@@ -188,7 +188,7 @@ func (v *LogArchiveView) Type() string {
 }
 
 type logArchiveDelegate struct {
-	styles styles.Theme
+	styles themes.Theme
 }
 
 func (d *logArchiveDelegate) Height() int                             { return 1 }

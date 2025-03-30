@@ -27,7 +27,7 @@ func (w StdOutWriter) Write(p []byte) (n int, err error) {
 		case Hidden:
 			return len(p), nil
 		case Text:
-			w.Logger.Println(string(p))
+			w.Logger.Println(line)
 		case JSON, Logfmt:
 			if strings.TrimSpace(line) == "" {
 				continue
@@ -70,7 +70,7 @@ func (w StdErrWriter) Write(p []byte) (n int, err error) {
 		case Hidden:
 			return len(p), nil
 		case Text:
-			w.Logger.PlainTextNotice(string(p))
+			w.Logger.PlainTextNotice(line)
 		case JSON, Logfmt:
 			if strings.TrimSpace(line) == "" {
 				continue

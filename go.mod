@@ -1,6 +1,7 @@
 module github.com/jahvon/tuikit
 
-go 1.23
+go 1.23.0
+
 require (
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.1.2
@@ -10,7 +11,7 @@ require (
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20240919170804-a4978c8e603a
 	github.com/jahvon/glamour v0.8.1-patch3
 	github.com/muesli/reflow v0.3.0
-	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a
+	github.com/muesli/termenv v0.16.0
 	go.uber.org/mock v0.5.0
 	golang.org/x/term v0.29.0
 	gopkg.in/yaml.v3 v3.0.1

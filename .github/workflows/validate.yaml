@@ -56,9 +56,9 @@ jobs:
       #  |_____|_|_| |_|\__|
       #
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.60.3
+          version: v2.1.6
 
       #   _____         _
       #  |_   _|__  ___| |_
@@ -71,9 +71,9 @@ jobs:
         run: go test ./... -coverprofile=coverage.txt -covermode=atomic
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          file: ./coverage.txt
+          files: ./coverage.txt
           fail_ci_if_error: false

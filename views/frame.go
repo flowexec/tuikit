@@ -6,8 +6,13 @@ import (
 
 const FrameViewType = "frame"
 
+type FramedModel interface {
+	tea.Model
+	tea.ViewModel
+}
+
 type FrameView struct {
-	model tea.Model
+	model FramedModel
 }
 
 func (v *FrameView) Init() tea.Cmd {
@@ -34,7 +39,7 @@ func (v *FrameView) Type() string {
 	return FrameViewType
 }
 
-func NewFrameView(model tea.Model) *FrameView {
+func NewFrameView(model FramedModel) *FrameView {
 	return &FrameView{
 		model: model,
 	}

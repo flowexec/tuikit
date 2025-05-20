@@ -18,6 +18,7 @@ import (
 
 	"github.com/jahvon/tuikit/themes"
 	"github.com/jahvon/tuikit/types"
+	"github.com/jahvon/tuikit/utils"
 )
 
 type FormFieldType uint
@@ -192,7 +193,7 @@ func NewFormView(
 		WithWidth(state.ContentWidth).
 		WithHeight(state.ContentHeight).
 		WithShowHelp(true)
-	hf.SubmitCmd = types.Submit
+	hf.SubmitCmd = utils.V2CmdToCmd(types.Submit)
 	hf.CancelCmd = tea.Quit
 	if len(fields) > 5 {
 		hf = hf.WithLayout(huh.LayoutColumns(2)) // TODO: make this configurable or auto-dynamic
@@ -229,10 +230,10 @@ func (f *Form) Completed() bool {
 }
 
 func (f *Form) Init() teaV2.Cmd {
-	return f.form.Init()
+	return utils.CmdToV2Cmd(f.form.Init())
 }
 
-func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (f *Form) Update(msg teaV2.Msg) (teaV2.Model, teaV2.Cmd) {
 	if f.err != nil {
 		return f.err.Update(msg)
 	}
@@ -247,7 +248,7 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return f, nil
 			}
 		}
-		return f.form, types.ReplaceView
+		return f, types.ReplaceView
 	}
 
 	model, cmd := f.form.Update(msg)
@@ -255,9 +256,9 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	f.form, ok = model.(*huh.Form)
 	if !ok {
 		f.err = NewErrorView(fmt.Errorf("unable to cast form model to huh.Form"), f.theme)
-		return f, cmd
+		return f, utils.CmdToV2Cmd(cmd)
 	}
-	return f.form, cmd
+	return f, utils.CmdToV2Cmd(cmd)
 }
 
 func (f *Form) View() string {

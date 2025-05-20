@@ -33,6 +33,7 @@ func NewCollectionView(
 	selectedFunc func(header string) error,
 	keys ...types.KeyCallback,
 ) *CollectionView {
+	//nolint:exhaustive
 	switch format {
 	case "yaml", "yml", "YAML", "YML":
 		format = types.CollectionFormatYAML

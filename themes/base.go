@@ -286,12 +286,18 @@ func (t baseTheme) HuhTheme() *huh.Theme {
 	baseTheme.Blurred.BlurredButton = baseTheme.Blurred.BlurredButton.Foreground(lipglossv1.Color(t.Colors.Gray)).
 		Background(lipglossv1.Color(t.Colors.Gray))
 
-	baseTheme.Blurred.TextInput.Placeholder = baseTheme.Blurred.TextInput.Placeholder.Foreground(lipglossv1.Color(t.Colors.Gray))
-	baseTheme.Blurred.TextInput.Cursor = baseTheme.Blurred.TextInput.Cursor.Foreground(lipglossv1.Color(t.Colors.Gray))
-	baseTheme.Blurred.TextInput.CursorText = baseTheme.Blurred.TextInput.CursorText.Foreground(lipglossv1.Color(t.Colors.Gray))
-	baseTheme.Blurred.TextInput.Placeholder = baseTheme.Blurred.TextInput.Placeholder.Foreground(lipglossv1.Color(t.Colors.Gray))
-	baseTheme.Blurred.TextInput.Text = baseTheme.Blurred.TextInput.Text.Foreground(lipglossv1.Color(t.Colors.Gray))
-	baseTheme.Blurred.TextInput.Prompt = baseTheme.Blurred.TextInput.Prompt.Foreground(lipglossv1.Color(t.Colors.Gray))
+	baseTheme.Blurred.TextInput.Placeholder = baseTheme.Blurred.TextInput.Placeholder.
+		Foreground(lipglossv1.Color(t.Colors.Gray))
+	baseTheme.Blurred.TextInput.Cursor = baseTheme.Blurred.TextInput.Cursor.
+		Foreground(lipglossv1.Color(t.Colors.Gray))
+	baseTheme.Blurred.TextInput.CursorText = baseTheme.Blurred.TextInput.CursorText.
+		Foreground(lipglossv1.Color(t.Colors.Gray))
+	baseTheme.Blurred.TextInput.Placeholder = baseTheme.Blurred.TextInput.Placeholder.
+		Foreground(lipglossv1.Color(t.Colors.Gray))
+	baseTheme.Blurred.TextInput.Text = baseTheme.Blurred.TextInput.Text.
+		Foreground(lipglossv1.Color(t.Colors.Gray))
+	baseTheme.Blurred.TextInput.Prompt = baseTheme.Blurred.TextInput.Prompt.
+		Foreground(lipglossv1.Color(t.Colors.Gray))
 
 	return baseTheme
 }

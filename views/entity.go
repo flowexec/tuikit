@@ -30,6 +30,7 @@ func NewEntityView(
 	format types.Format,
 	keys ...types.KeyCallback,
 ) *EntityView {
+	//nolint:exhaustive
 	switch format {
 	case "yaml", "yml", "YAML", "YML":
 		format = types.EntityFormatYAML

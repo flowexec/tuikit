@@ -12,20 +12,20 @@ import (
 )
 
 type ColorPalette struct {
-	Primary   string `json:"primary" yaml:"primary"`
+	Primary   string `json:"primary"   yaml:"primary"`
 	Secondary string `json:"secondary" yaml:"secondary"`
-	Tertiary  string `json:"tertiary" yaml:"tertiary"`
-	Success   string `json:"success" yaml:"success"`
-	Warning   string `json:"warning" yaml:"warning"`
-	Error     string `json:"error" yaml:"error"`
-	Info      string `json:"info" yaml:"info"`
-	Body      string `json:"body" yaml:"body"`
-	Emphasis  string `json:"emphasis" yaml:"emphasis"`
-	Border    string `json:"border" yaml:"border"`
+	Tertiary  string `json:"tertiary"  yaml:"tertiary"`
+	Success   string `json:"success"   yaml:"success"`
+	Warning   string `json:"warning"   yaml:"warning"`
+	Error     string `json:"error"     yaml:"error"`
+	Info      string `json:"info"      yaml:"info"`
+	Body      string `json:"body"      yaml:"body"`
+	Emphasis  string `json:"emphasis"  yaml:"emphasis"`
+	Border    string `json:"border"    yaml:"border"`
 
 	Black string `json:"black" yaml:"black"`
 	White string `json:"white" yaml:"white"`
-	Gray  string `json:"gray" yaml:"gray"`
+	Gray  string `json:"gray"  yaml:"gray"`
 
 	// see https://github.com/alecthomas/chroma
 	ChromaCodeStyle string `json:"chromaCodeStyle" yaml:"chromaCodeStyle"`
@@ -61,6 +61,7 @@ func ReadColorPalette(file string) (*ColorPalette, error) {
 	return cp, nil
 }
 
+//nolint:goconst
 func WithDefaultColors(orig ColorPalette) ColorPalette {
 	cp := orig
 	if cp.Primary == "" {

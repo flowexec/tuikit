@@ -76,6 +76,17 @@ func WithExitFunc(exit func()) LoggerOptions {
 	}
 }
 
+// NewLogger creates a new instance of StandardLogger with the provided functional options.
+// 
+// Functional options allow you to customize the behavior of the logger:
+// - WithTheme(theme styles.Theme): Sets the theme for the logger's output.
+// - WithMode(mode LogMode): Configures the logging mode (e.g., text or JSON).
+// - WithOutput(file *os.File): Specifies the output file for the logger.
+// - WithArchiveDirectory(path string): Enables log archiving to the specified directory.
+//   If the path is empty, archiving is disabled.
+// - WithExitFunc(exit func()): Sets a custom function to be called on logger exit.
+//
+// By default, the logger uses a standard theme, text mode, and writes to os.Stdout.
 func NewLogger(opts ...LoggerOptions) *StandardLogger {
 	logger := &StandardLogger{
 		theme:    defaultTheme,

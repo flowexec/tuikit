@@ -33,7 +33,7 @@ type ColorPalette struct {
 
 func ReadColorPalette(file string) (*ColorPalette, error) {
 	cp := &ColorPalette{}
-	f, err := os.Open(file)
+	f, err := os.Open(filepath.Clean(file))
 	if err != nil {
 		return nil, err
 	}

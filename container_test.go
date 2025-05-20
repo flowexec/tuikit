@@ -214,6 +214,6 @@ func TestFormOutput(t *testing.T) {
 	teatest.WaitFor(t, tm.Output(), func(bts []byte) bool {
 		return bytes.Contains(bts, []byte("Thank you for confirming!"))
 	}, teatest.WithCheckInterval(100*time.Millisecond), teatest.WithDuration(5*time.Second))
-	container.Send(oldTea.KeyMsg{Type: oldTea.KeyRunes, Runes: []rune{'q'}}, 100*time.Millisecond)
+	container.Send(tea.KeyPressMsg{Text: "q"}, 100*time.Millisecond)
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))
 }

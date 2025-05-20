@@ -8,19 +8,19 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/muesli/termenv"
 
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 )
 
 var (
 	defaultMode   = Text
-	defaultTheme  = styles.EverforestTheme()
+	defaultTheme  = themes.EverforestTheme()
 	defaultOutput = os.Stdout
 )
 
 type StandardLogger struct {
 	outHandler     *log.Logger
 	archiveHandler *log.Logger
-	theme          styles.Theme
+	theme          themes.Theme
 	mode           LogMode
 	archiveDir     string
 	archiveFile    *os.File
@@ -30,7 +30,7 @@ type StandardLogger struct {
 
 type LoggerOptions func(*StandardLogger)
 
-func WithTheme(theme styles.Theme) LoggerOptions {
+func WithTheme(theme themes.Theme) LoggerOptions {
 	return func(logger *StandardLogger) {
 		logger.theme = theme
 	}
@@ -119,7 +119,7 @@ func (l *StandardLogger) LogMode() LogMode {
 	return l.mode
 }
 
-func applyHumanReadableFormat(handler *log.Logger, style styles.Theme, mode LogMode) {
+func applyHumanReadableFormat(handler *log.Logger, style themes.Theme, mode LogMode) {
 	handler.SetReportTimestamp(true)
 	if mode == JSON {
 		handler.SetFormatter(log.JSONFormatter)
@@ -202,7 +202,7 @@ func (l *StandardLogger) Noticef(msg string, args ...any) {
 	case Hidden:
 		return
 	case JSON, Logfmt:
-		l.outHandler.With().Log(styles.LogNoticeLevel, msg, args...)
+		l.outHandler.With().Log(themes.LogNoticeLevel, msg, args...)
 		if l.archiveHandler != nil {
 			l.archiveHandler.Errorf(msg, args...)
 		}
@@ -304,7 +304,7 @@ func (l *StandardLogger) Noticex(msg string, kv ...any) {
 		return
 	}
 	l.syncLoggerFormat()
-	l.outHandler.With().Log(styles.LogNoticeLevel, msg, kv...)
+	l.outHandler.With().Log(themes.LogNoticeLevel, msg, kv...)
 	if l.archiveHandler != nil {
 		l.archiveHandler.Errorf(msg, kv...)
 	}

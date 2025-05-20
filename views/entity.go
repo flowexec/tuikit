@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/v2/viewport"
+	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/jahvon/glamour"
 
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 	"github.com/jahvon/tuikit/types"
 )
 
@@ -18,7 +18,7 @@ type EntityView struct {
 	viewport viewport.Model
 	err      *ErrorView
 
-	styles        styles.Theme
+	styles        themes.Theme
 	width, height int
 	format        types.Format
 	callbacks     []types.KeyCallback
@@ -30,14 +30,23 @@ func NewEntityView(
 	format types.Format,
 	keys ...types.KeyCallback,
 ) *EntityView {
-	if format == "" {
+	//nolint:exhaustive
+	switch format {
+	case "yaml", "yml", "YAML", "YML":
+		format = types.EntityFormatYAML
+	case "json", "JSON":
+		format = types.EntityFormatJSON
+	case "doc", "md", "text", "markdown":
+		format = types.EntityFormatDocument
+	default:
 		format = types.EntityFormatDocument
 	}
-	vp := viewport.New(state.ContentWidth, state.ContentHeight)
-	vp.Style = state.Theme.EntityView().Width(state.ContentWidth)
+
+	vp := viewport.New(viewport.WithWidth(state.ContentWidth), viewport.WithHeight(state.ContentHeight))
+	vp.Style = state.Theme.EntityViewStyle().Width(state.ContentWidth)
 	return &EntityView{
 		entity:    entity,
-		styles:    *state.Theme,
+		styles:    state.Theme,
 		width:     state.ContentWidth,
 		height:    state.ContentHeight,
 		format:    format,
@@ -60,8 +69,8 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case types.RenderState:
-		v.viewport.Width = msg.ContentWidth
-		v.viewport.Height = msg.ContentHeight
+		v.viewport.SetWidth(msg.ContentWidth)
+		v.viewport.SetHeight(msg.ContentHeight)
 		v.viewport.SetContent(v.renderedContent())
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -126,7 +135,7 @@ func (v *EntityView) renderedContent() string {
 		content = "no data"
 	}
 
-	mdStyles, err := v.styles.MarkdownStyleJSON()
+	mdStyles, err := v.styles.GlamourMarkdownStyleJSON()
 	if err != nil {
 		v.err = NewErrorView(err, v.styles)
 		return v.err.View()

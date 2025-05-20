@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/v2/list"
+	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/jahvon/glamour"
 
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 	"github.com/jahvon/tuikit/types"
 )
 
@@ -21,7 +21,7 @@ type CollectionView struct {
 
 	format        types.Format
 	width, height int
-	styles        styles.Theme
+	styles        themes.Theme
 	callbacks     []types.KeyCallback
 	selectedFunc  func(header string) error
 }
@@ -33,7 +33,15 @@ func NewCollectionView(
 	selectedFunc func(header string) error,
 	keys ...types.KeyCallback,
 ) *CollectionView {
-	if format == "" {
+	//nolint:exhaustive
+	switch format {
+	case "yaml", "yml", "YAML", "YML":
+		format = types.CollectionFormatYAML
+	case "json", "JSON":
+		format = types.CollectionFormatJSON
+	case "list", "ls", "browse":
+		format = types.CollectionFormatList
+	default:
 		format = types.CollectionFormatList
 	}
 	items := make([]list.Item, 0)
@@ -61,7 +69,7 @@ func NewCollectionView(
 		format:       format,
 		width:        state.ContentWidth,
 		height:       state.ContentHeight,
-		styles:       *state.Theme,
+		styles:       state.Theme,
 		selectedFunc: selectedFunc,
 		callbacks:    keys,
 	}
@@ -99,7 +107,7 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return v, nil
 			}
 			v.format = types.CollectionFormatJSON
-		case tea.KeyEnter.String():
+		case "enter":
 			if v.selectedFunc == nil {
 				return v, nil
 			}
@@ -160,7 +168,7 @@ func (v *CollectionView) renderedContent() string {
 	case types.CollectionFormatList:
 		v.model.SetSize(v.width, v.height)
 		v.UpdateItemsFromCollections()
-		style := v.styles.Collection().Width(v.width)
+		style := v.styles.CollectionStyle().Width(v.width)
 		content = style.Render(v.model.View())
 	case types.EntityFormatDocument:
 		fallthrough
@@ -179,7 +187,7 @@ func (v *CollectionView) renderedContent() string {
 		return content
 	}
 
-	mdStyles, err := v.styles.MarkdownStyleJSON()
+	mdStyles, err := v.styles.GlamourMarkdownStyleJSON()
 	if err != nil {
 		v.err = NewErrorView(err, v.styles)
 		return v.err.View()

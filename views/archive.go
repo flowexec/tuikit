@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/bubbles/v2/list"
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
 
 	"github.com/jahvon/tuikit/io"
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 	"github.com/jahvon/tuikit/types"
 )
 
@@ -28,7 +28,7 @@ type LogArchiveView struct {
 	err         *ErrorView
 
 	width, height int
-	styles        styles.Theme
+	styles        themes.Theme
 }
 
 func NewLogArchiveView(state *types.RenderState, archiveDir string, lastEntry bool) *LogArchiveView {
@@ -36,14 +36,14 @@ func NewLogArchiveView(state *types.RenderState, archiveDir string, lastEntry bo
 	entries, err := io.ListArchiveEntries(archiveDir)
 	var errView *ErrorView
 	if err != nil {
-		errView = NewErrorView(err, *state.Theme)
+		errView = NewErrorView(err, state.Theme)
 		return &LogArchiveView{err: errView}
 	}
 	slices.Reverse(entries)
 	for _, entry := range entries {
 		items = append(items, entry)
 	}
-	delegate := &logArchiveDelegate{styles: *state.Theme}
+	delegate := &logArchiveDelegate{theme: state.Theme}
 	model := list.New(items, delegate, state.Width, state.Height)
 	model.SetShowTitle(false)
 	model.SetShowHelp(false)
@@ -63,7 +63,7 @@ func NewLogArchiveView(state *types.RenderState, archiveDir string, lastEntry bo
 		items:         items,
 		width:         state.ContentWidth,
 		height:        state.ContentHeight,
-		styles:        *state.Theme,
+		styles:        state.Theme,
 	}
 }
 
@@ -125,7 +125,7 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			v.model.SetItems(v.items)
-		case tea.KeyEnter.String():
+		case "enter":
 			if v.activeEntry != nil {
 				return v, nil
 			}
@@ -169,7 +169,7 @@ func (v *LogArchiveView) View() string {
 		return v.err.View()
 	default:
 		v.model.SetSize(v.width, v.height)
-		style := v.styles.Box().Width(v.width)
+		style := v.styles.BoxStyle().Width(v.width)
 		content = style.Render(v.model.View())
 	}
 	return content
@@ -188,7 +188,7 @@ func (v *LogArchiveView) Type() string {
 }
 
 type logArchiveDelegate struct {
-	styles styles.Theme
+	theme themes.Theme
 }
 
 func (d *logArchiveDelegate) Height() int                             { return 1 }
@@ -201,18 +201,18 @@ func (d *logArchiveDelegate) Render(w stdIO.Writer, m list.Model, index int, lis
 	}
 	title := fmt.Sprintf("%d. %s", index+1, i.Title())
 	description := i.Description()
-	titleStyle := lipgloss.NewStyle().Foreground(d.styles.White).PaddingLeft(2).Render
-	descriptionStyle := lipgloss.NewStyle().Foreground(d.styles.White).Render
+	titleStyle := lipgloss.NewStyle().Foreground(d.theme.ColorPalette().WhiteColor()).PaddingLeft(2).Render
+	descriptionStyle := lipgloss.NewStyle().Foreground(d.theme.ColorPalette().WhiteColor()).Render
 	if index == m.Index() {
 		titleStyle = func(s ...string) string {
 			return lipgloss.NewStyle().
-				Foreground(d.styles.SecondaryColor).
-				BorderForeground(d.styles.SecondaryColor).
+				Foreground(d.theme.ColorPalette().SecondaryColor()).
+				BorderForeground(d.theme.ColorPalette().SecondaryColor()).
 				BorderLeft(true).
 				PaddingLeft(2).
 				Render("" + strings.Join(s, " "))
 		}
-		descriptionStyle = lipgloss.NewStyle().Foreground(d.styles.SecondaryColor).Render
+		descriptionStyle = lipgloss.NewStyle().Foreground(d.theme.ColorPalette().SecondaryColor()).Render
 	}
 	itemStr := titleStyle(title) + descriptionStyle(fmt.Sprintf(" (%s)", description))
 	_, _ = fmt.Fprint(w, itemStr)

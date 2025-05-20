@@ -3,11 +3,11 @@ package views
 import (
 	"math"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/v2/viewport"
+	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/jahvon/glamour"
 
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 	"github.com/jahvon/tuikit/types"
 )
 
@@ -15,17 +15,17 @@ type MarkdownView struct {
 	content       string
 	viewport      viewport.Model
 	err           *ErrorView
-	theme         styles.Theme
+	theme         themes.Theme
 	width, height int
 }
 
 func NewMarkdownView(state *types.RenderState, content string) *MarkdownView {
-	vp := viewport.New(state.ContentWidth, state.ContentHeight)
-	vp.Style = state.Theme.EntityView().Width(state.ContentWidth).Height(state.ContentHeight)
+	vp := viewport.New(viewport.WithWidth(state.ContentWidth), viewport.WithHeight(state.ContentHeight))
+	vp.Style = state.Theme.EntityViewStyle().Width(state.ContentWidth).Height(state.ContentHeight)
 	return &MarkdownView{
 		content:  content,
 		viewport: vp,
-		theme:    *state.Theme,
+		theme:    state.Theme,
 	}
 }
 
@@ -41,8 +41,8 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case types.RenderState:
 		v.width = msg.ContentWidth
 		v.height = msg.ContentHeight
-		v.viewport.Width = v.width
-		v.viewport.Height = v.height
+		v.viewport.SetWidth(v.width)
+		v.viewport.SetHeight(v.height)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up":
@@ -57,7 +57,7 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (v *MarkdownView) View() string {
-	mdStyles, err := v.theme.MarkdownStyleJSON()
+	mdStyles, err := v.theme.GlamourMarkdownStyleJSON()
 	if err != nil {
 		v.err = NewErrorView(err, v.theme)
 		return v.err.View()

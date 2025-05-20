@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea/v2"
 	"gopkg.in/yaml.v3"
 
 	"github.com/jahvon/tuikit/types"

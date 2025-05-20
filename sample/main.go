@@ -37,9 +37,9 @@ func main() {
 		}
 		view = views.NewFrameView(inner)
 	case "loading":
-		view = views.NewLoadingView("waiting for the paint to dry...", *container.RenderState().Theme)
+		view = views.NewLoadingView("waiting for the paint to dry...", container.RenderState().Theme)
 	case "error":
-		view = views.NewErrorView(errors.New("something went wrong - please try again"), *container.RenderState().Theme)
+		view = views.NewErrorView(errors.New("something went wrong - please try again"), container.RenderState().Theme)
 	case "markdown":
 		md := "# Hmmm...\n\n > To be, or not to be, **that is the question**.\n> *William Shakespeare*"
 		view = views.NewMarkdownView(container.RenderState(), md)

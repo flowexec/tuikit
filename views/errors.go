@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea/v2"
 
-	"github.com/jahvon/tuikit/styles"
+	"github.com/jahvon/tuikit/themes"
 	"github.com/jahvon/tuikit/types"
 )
 
@@ -14,10 +14,10 @@ const ErrorViewType = "error"
 
 type ErrorView struct {
 	err   error
-	theme styles.Theme
+	theme themes.Theme
 }
 
-func NewErrorView(err error, theme styles.Theme) *ErrorView {
+func NewErrorView(err error, theme themes.Theme) *ErrorView {
 	return &ErrorView{
 		err:   err,
 		theme: theme,

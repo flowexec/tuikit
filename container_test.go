@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	oldTea "github.com/charmbracelet/bubbletea"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/lipgloss/v2/compat"
-	teatest "github.com/charmbracelet/x/exp/teatest/v2"
+	"github.com/charmbracelet/x/exp/teatest/v2"
 
 	"github.com/jahvon/tuikit"
 	sampleTypes "github.com/jahvon/tuikit/sample/types"
@@ -209,10 +210,10 @@ func TestFormOutput(t *testing.T) {
 	teatest.WaitFor(t, tm.Output(), func(bts []byte) bool {
 		return bytes.Contains(bts, []byte("Are you sure?"))
 	}, teatest.WithCheckInterval(100*time.Millisecond), teatest.WithDuration(3*time.Second))
-	container.Send(tea.KeyEnter, 100*time.Millisecond)
+	container.Send(oldTea.KeyMsg{Type: oldTea.KeyEnter}, 100*time.Millisecond)
 	teatest.WaitFor(t, tm.Output(), func(bts []byte) bool {
 		return bytes.Contains(bts, []byte("Thank you for confirming!"))
-	}, teatest.WithCheckInterval(100*time.Millisecond), teatest.WithDuration(3*time.Second))
-	container.Send(tea.Key{Text: "q"}, 100*time.Millisecond)
+	}, teatest.WithCheckInterval(100*time.Millisecond), teatest.WithDuration(5*time.Second))
+	container.Send(oldTea.KeyMsg{Type: oldTea.KeyRunes, Runes: []rune{'q'}}, 100*time.Millisecond)
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))
 }

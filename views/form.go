@@ -251,7 +251,7 @@ func (f *Form) Update(msg teaV2.Msg) (teaV2.Model, teaV2.Cmd) {
 		return f, types.ReplaceView
 	}
 
-	model, cmd := f.form.Update(msg)
+	model, cmd := f.form.Update(utils.V2MsgToMsg(msg))
 	var ok bool
 	f.form, ok = model.(*huh.Form)
 	if !ok {

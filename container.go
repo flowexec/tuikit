@@ -18,6 +18,7 @@ import (
 
 type View interface {
 	tea.Model
+	tea.ViewModel
 
 	ShowFooter() bool
 	HelpMsg() string
@@ -117,19 +118,19 @@ func (c *Container) HandleError(err error) {
 	}
 }
 
-func (c *Container) Init() (tea.Model, tea.Cmd) {
+func (c *Container) Init() tea.Cmd {
 	cmds := make([]tea.Cmd, 0)
 	if c.currentView == nil {
 		c.currentView = c.loadingView()
 	}
-	cur, cmd := c.CurrentView().Init()
+	cmd := c.CurrentView().Init()
 	cmds = append(
 		cmds,
 		tea.SetWindowTitle(c.app.Name),
 		c.doTick(),
 		cmd,
 	)
-	return cur, tea.Batch(cmds...)
+	return tea.Batch(cmds...)
 }
 
 //nolint:gocognit,funlen
@@ -381,7 +382,7 @@ func (c *Container) doTick() tea.Cmd {
 	})
 }
 func (c *Container) loadingView() View {
-	return views.NewLoadingView(c.app.loadingMsg, *c.render.Theme)
+	return views.NewLoadingView(c.app.loadingMsg, c.render.Theme)
 }
 
 func WithInitialTermSize(width, height int) ContainerOptions {

@@ -74,8 +74,8 @@ func NewCollectionView(
 	}
 }
 
-func (v *CollectionView) Init() (tea.Model, tea.Cmd) {
-	return v, nil
+func (v *CollectionView) Init() tea.Cmd {
+	return nil
 }
 
 //nolint:gocognit
@@ -106,7 +106,7 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return v, nil
 			}
 			v.format = types.CollectionFormatJSON
-		case tea.KeyEnter.String():
+		case "enter":
 			if v.selectedFunc == nil {
 				return v, nil
 			}

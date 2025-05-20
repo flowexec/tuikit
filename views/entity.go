@@ -54,8 +54,8 @@ func NewEntityView(
 	}
 }
 
-func (v *EntityView) Init() (tea.Model, tea.Cmd) {
-	return v, nil
+func (v *EntityView) Init() tea.Cmd {
+	return nil
 }
 
 //nolint:gocognit

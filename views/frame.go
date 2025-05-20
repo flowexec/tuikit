@@ -10,7 +10,7 @@ type FrameView struct {
 	model tea.Model
 }
 
-func (v *FrameView) Init() (tea.Model, tea.Cmd) {
+func (v *FrameView) Init() tea.Cmd {
 	return v.model.Init()
 }
 

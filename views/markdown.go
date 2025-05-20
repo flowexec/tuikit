@@ -29,7 +29,7 @@ func NewMarkdownView(state *types.RenderState, content string) *MarkdownView {
 	}
 }
 
-func (v *MarkdownView) Init() (tea.Model, tea.Cmd) {
+func (v *MarkdownView) Init() tea.Cmd {
 	return v.viewport.Init()
 }
 

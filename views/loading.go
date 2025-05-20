@@ -20,8 +20,8 @@ type LoadingView struct {
 	spinner spinner.Model
 }
 
-func (v *LoadingView) Init() (tea.Model, tea.Cmd) {
-	return v, v.spinner.Tick
+func (v *LoadingView) Init() tea.Cmd {
+	return v.spinner.Tick
 }
 
 func (v *LoadingView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -61,7 +61,7 @@ func (v *LoadingView) Type() string {
 func NewLoadingView(msg string, theme themes.Theme) *LoadingView {
 	spin := spinner.New()
 	spin.Style = theme.SpinnerStyle()
-	spin.Spinner = theme.SpinnerType
+	spin.Spinner = theme.Spinner()
 	return &LoadingView{
 		theme:   theme,
 		msg:     msg,

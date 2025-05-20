@@ -2,12 +2,16 @@ package themes
 
 import (
 	"github.com/charmbracelet/bubbles/v2/list"
+	"github.com/charmbracelet/bubbles/v2/spinner"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/log"
 )
 
 type Theme interface {
+	String() string
+	ColorPalette() ColorPalette
+
 	RenderBold(text string) string
 	RenderInfo(text string) string
 	RenderNotice(text string) string
@@ -24,13 +28,14 @@ type Theme interface {
 	RenderInputForm(text string) string
 	RenderInContainer(text string) string
 
+	Spinner() spinner.Spinner
 	SpinnerStyle() lipgloss.Style
 	EntityViewStyle() lipgloss.Style
 	CollectionStyle() lipgloss.Style
 	BoxStyle() lipgloss.Style
 	ListStyles() list.Styles
 	ListItemStyles() list.DefaultItemStyles
-	
+
 	LoggerStyles() *log.Styles
 	GlamourMarkdownStyleJSON() (string, error)
 	HuhTheme() *huh.Theme

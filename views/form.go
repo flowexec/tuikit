@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	teaV2 "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/huh"
 	"golang.org/x/term"
 
@@ -198,7 +199,7 @@ func NewFormView(
 	}
 	return &Form{
 		fields: fields,
-		theme:  *state.Theme,
+		theme:  state.Theme,
 		form:   hf,
 	}, nil
 }
@@ -227,7 +228,7 @@ func (f *Form) Completed() bool {
 	return f.completed
 }
 
-func (f *Form) Init() tea.Cmd {
+func (f *Form) Init() teaV2.Cmd {
 	return f.form.Init()
 }
 

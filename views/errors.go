@@ -24,8 +24,8 @@ func NewErrorView(err error, theme themes.Theme) *ErrorView {
 	}
 }
 
-func (v *ErrorView) Init() (tea.Model, tea.Cmd) {
-	return v, nil
+func (v *ErrorView) Init() tea.Cmd {
+	return nil
 }
 
 func (v *ErrorView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

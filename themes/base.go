@@ -29,6 +29,18 @@ type baseTheme struct {
 	Colors      ColorPalette
 }
 
+func (t baseTheme) String() string {
+	return t.Name
+}
+
+func (t baseTheme) ColorPalette() ColorPalette {
+	return t.Colors
+}
+
+func (t baseTheme) Spinner() spinner.Spinner {
+	return t.SpinnerType
+}
+
 func (t baseTheme) SpinnerStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(t.Colors.Secondary))
 }

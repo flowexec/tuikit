@@ -43,7 +43,7 @@ func NewLogArchiveView(state *types.RenderState, archiveDir string, lastEntry bo
 	for _, entry := range entries {
 		items = append(items, entry)
 	}
-	delegate := &logArchiveDelegate{styles: state.Theme}
+	delegate := &logArchiveDelegate{theme: state.Theme}
 	model := list.New(items, delegate, state.Width, state.Height)
 	model.SetShowTitle(false)
 	model.SetShowHelp(false)
@@ -125,7 +125,7 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			v.model.SetItems(v.items)
-		case tea.KeyEnter.String():
+		case "enter":
 			if v.activeEntry != nil {
 				return v, nil
 			}
@@ -188,7 +188,7 @@ func (v *LogArchiveView) Type() string {
 }
 
 type logArchiveDelegate struct {
-	styles themes.Theme
+	theme themes.Theme
 }
 
 func (d *logArchiveDelegate) Height() int                             { return 1 }
@@ -201,18 +201,18 @@ func (d *logArchiveDelegate) Render(w stdIO.Writer, m list.Model, index int, lis
 	}
 	title := fmt.Sprintf("%d. %s", index+1, i.Title())
 	description := i.Description()
-	titleStyle := lipgloss.NewStyle().Foreground(d.styles.White).PaddingLeft(2).Render
-	descriptionStyle := lipgloss.NewStyle().Foreground(d.styles.White).Render
+	titleStyle := lipgloss.NewStyle().Foreground(d.theme.ColorPalette().WhiteColor()).PaddingLeft(2).Render
+	descriptionStyle := lipgloss.NewStyle().Foreground(d.theme.ColorPalette().WhiteColor()).Render
 	if index == m.Index() {
 		titleStyle = func(s ...string) string {
 			return lipgloss.NewStyle().
-				Foreground(d.styles.SecondaryColor).
-				BorderForeground(d.styles.SecondaryColor).
+				Foreground(d.theme.ColorPalette().SecondaryColor()).
+				BorderForeground(d.theme.ColorPalette().SecondaryColor()).
 				BorderLeft(true).
 				PaddingLeft(2).
 				Render("" + strings.Join(s, " "))
 		}
-		descriptionStyle = lipgloss.NewStyle().Foreground(d.styles.SecondaryColor).Render
+		descriptionStyle = lipgloss.NewStyle().Foreground(d.theme.ColorPalette().SecondaryColor()).Render
 	}
 	itemStr := titleStyle(title) + descriptionStyle(fmt.Sprintf(" (%s)", description))
 	_, _ = fmt.Fprint(w, itemStr)

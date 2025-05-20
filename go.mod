@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/lipgloss/v2 v2.0.0-beta1
 	github.com/charmbracelet/log v0.4.2
-	github.com/charmbracelet/x/exp/teatest v0.0.0-20250520131230-8df7c22c09d4
+	github.com/charmbracelet/x/exp/teatest/v2 v2.0.0-20250520131230-8df7c22c09d4
 	github.com/jahvon/glamour v0.8.1-patch3
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.16.0

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"gopkg.in/yaml.v3"
 )
 
@@ -104,4 +105,57 @@ func WithDefaultColors(orig ColorPalette) ColorPalette {
 	if cp.ChromaCodeStyle == "" {
 		cp.ChromaCodeStyle = "friendly"
 	}
+	return cp
+}
+
+func (cp ColorPalette) PrimaryColor() lipgloss.Color {
+	return lipgloss.Color(cp.Primary)
+}
+
+func (cp ColorPalette) SecondaryColor() lipgloss.Color {
+	return lipgloss.Color(cp.Secondary)
+}
+
+func (cp ColorPalette) TertiaryColor() lipgloss.Color {
+	return lipgloss.Color(cp.Tertiary)
+}
+
+func (cp ColorPalette) SuccessColor() lipgloss.Color {
+	return lipgloss.Color(cp.Success)
+}
+
+func (cp ColorPalette) WarningColor() lipgloss.Color {
+	return lipgloss.Color(cp.Warning)
+}
+
+func (cp ColorPalette) ErrorColor() lipgloss.Color {
+	return lipgloss.Color(cp.Error)
+}
+
+func (cp ColorPalette) InfoColor() lipgloss.Color {
+	return lipgloss.Color(cp.Info)
+}
+
+func (cp ColorPalette) BodyColor() lipgloss.Color {
+	return lipgloss.Color(cp.Body)
+}
+
+func (cp ColorPalette) EmphasisColor() lipgloss.Color {
+	return lipgloss.Color(cp.Emphasis)
+}
+
+func (cp ColorPalette) BorderColor() lipgloss.Color {
+	return lipgloss.Color(cp.Border)
+}
+
+func (cp ColorPalette) BlackColor() lipgloss.Color {
+	return lipgloss.Color(cp.Black)
+}
+
+func (cp ColorPalette) WhiteColor() lipgloss.Color {
+	return lipgloss.Color(cp.White)
+}
+
+func (cp ColorPalette) GrayColor() lipgloss.Color {
+	return lipgloss.Color(cp.Gray)
 }

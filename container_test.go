@@ -9,9 +9,9 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
-	"github.com/charmbracelet/x/exp/teatest"
-	"github.com/muesli/termenv"
+	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/lipgloss/v2/compat"
+	teatest "github.com/charmbracelet/x/exp/teatest/v2"
 
 	"github.com/jahvon/tuikit"
 	sampleTypes "github.com/jahvon/tuikit/sample/types"
@@ -20,7 +20,7 @@ import (
 )
 
 func init() {
-	lipgloss.SetColorProfile(termenv.Ascii)
+	compat.Profile = colorprofile.Ascii
 }
 
 func TestFrameOutput(t *testing.T) {
@@ -57,7 +57,7 @@ func TestLoadingOutput(t *testing.T) {
 
 	tm := teatest.NewTestModel(t, container, teatest.WithInitialTermSize(80, 80))
 	container.SetSendFunc(tm.Send)
-	view := views.NewLoadingView("thinking...", *container.RenderState().Theme)
+	view := views.NewLoadingView("thinking...", container.RenderState().Theme)
 	if err := container.SetView(view); err != nil {
 		t.Errorf("Failed to set view: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestErrorOutput(t *testing.T) {
 
 	tm := teatest.NewTestModel(t, container, teatest.WithInitialTermSize(80, 80))
 	container.SetSendFunc(tm.Send)
-	view := views.NewErrorView(errors.New("something went wrong - please try again"), *container.RenderState().Theme)
+	view := views.NewErrorView(errors.New("something went wrong - please try again"), container.RenderState().Theme)
 	if err := container.SetView(view); err != nil {
 		t.Errorf("Failed to set view: %v", err)
 	}
@@ -209,10 +209,10 @@ func TestFormOutput(t *testing.T) {
 	teatest.WaitFor(t, tm.Output(), func(bts []byte) bool {
 		return bytes.Contains(bts, []byte("Are you sure?"))
 	}, teatest.WithCheckInterval(100*time.Millisecond), teatest.WithDuration(3*time.Second))
-	container.Send(tea.KeyMsg{Type: tea.KeyEnter}, 100*time.Millisecond)
+	container.Send(tea.KeyEnter, 100*time.Millisecond)
 	teatest.WaitFor(t, tm.Output(), func(bts []byte) bool {
 		return bytes.Contains(bts, []byte("Thank you for confirming!"))
 	}, teatest.WithCheckInterval(100*time.Millisecond), teatest.WithDuration(3*time.Second))
-	container.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")}, 100*time.Millisecond)
+	container.Send(tea.Key{Text: "q"}, 100*time.Millisecond)
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))
 }

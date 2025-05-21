@@ -10,7 +10,7 @@ import (
 
 type Theme interface {
 	String() string
-	ColorPalette() ColorPalette
+	ColorPalette() *ColorPalette
 
 	RenderBold(text string) string
 	RenderInfo(text string) string

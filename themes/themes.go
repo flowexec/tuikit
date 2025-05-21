@@ -16,7 +16,7 @@ const (
 
 func NewTheme(name string, cp ColorPalette) Theme {
 	colors := WithDefaultColors(cp)
-	return baseTheme{Name: name, SpinnerType: spinner.Points, Colors: colors}
+	return baseTheme{Name: name, SpinnerType: spinner.Points, Colors: &colors}
 }
 
 type ThemeFunc func() Theme

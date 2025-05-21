@@ -26,14 +26,14 @@ var mdstylesTemplateJSON string
 type baseTheme struct {
 	Name        string          `json:"-" yaml:"-"`
 	SpinnerType spinner.Spinner `json:"-" yaml:"-"`
-	Colors      ColorPalette
+	Colors      *ColorPalette
 }
 
 func (t baseTheme) String() string {
 	return t.Name
 }
 
-func (t baseTheme) ColorPalette() ColorPalette {
+func (t baseTheme) ColorPalette() *ColorPalette {
 	return t.Colors
 }
 

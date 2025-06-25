@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/charmbracelet/bubbles/v2/list"
-	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jahvon/glamour"
 
 	"github.com/jahvon/tuikit/themes"
@@ -107,7 +107,7 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return v, nil
 			}
 			v.format = types.CollectionFormatJSON
-		case "enter":
+		case tea.KeyEnter.String():
 			if v.selectedFunc == nil {
 				return v, nil
 			}

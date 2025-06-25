@@ -3,15 +3,12 @@ module github.com/jahvon/tuikit
 go 1.23.0
 
 require (
-	github.com/charmbracelet/bubbles/v2 v2.0.0-beta.1
+	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.5
-	github.com/charmbracelet/bubbletea/v2 v2.0.0-beta1
-	github.com/charmbracelet/colorprofile v0.3.1
 	github.com/charmbracelet/huh v0.7.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/charmbracelet/lipgloss/v2 v2.0.0-beta1
 	github.com/charmbracelet/log v0.4.2
-	github.com/charmbracelet/x/exp/teatest/v2 v2.0.0-20250520131230-8df7c22c09d4
+	github.com/charmbracelet/x/exp/teatest v0.0.0-20250623112707-45752038d08d
 	github.com/jahvon/glamour v0.8.1-patch3
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.16.0
@@ -27,14 +24,12 @@ require (
 	github.com/aymanbagabas/go-udiff v0.2.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/catppuccin/go v0.3.0 // indirect
-	github.com/charmbracelet/bubbles v0.21.0 // indirect
+	github.com/charmbracelet/colorprofile v0.3.1 // indirect
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.14-0.20250501183327-ad3bc78c6a81 // indirect
 	github.com/charmbracelet/x/exp/golden v0.0.0-20250207160936-21c02780d27a // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
-	github.com/charmbracelet/x/input v0.3.5-0.20250424101541-abb4d9a9b197 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
-	github.com/charmbracelet/x/windows v0.2.1 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect

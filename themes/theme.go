@@ -1,10 +1,10 @@
 package themes
 
 import (
-	"github.com/charmbracelet/bubbles/v2/list"
-	"github.com/charmbracelet/bubbles/v2/spinner"
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 )
 

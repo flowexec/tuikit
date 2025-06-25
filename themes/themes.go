@@ -3,7 +3,7 @@ package themes
 import (
 	_ "embed"
 
-	"github.com/charmbracelet/bubbles/v2/spinner"
+	"github.com/charmbracelet/bubbles/spinner"
 )
 
 const (

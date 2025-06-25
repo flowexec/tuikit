@@ -65,19 +65,19 @@ func RotateArchive(logger *StandardLogger) {
 	}
 	files, err := os.ReadDir(logger.archiveDir)
 	if err != nil {
-		logger.Fatalf("failed to read archive directory: %s", err)
+		logger.Errorf("failed to read archive directory: %s", err)
 	}
-	if len(files) < MaxArchiveSize {
+	if len(files) <= MaxArchiveSize {
 		return
 	}
 	slices.SortFunc(files, func(i, j os.DirEntry) int {
 		iInfo, err := i.Info()
 		if err != nil {
-			logger.Fatalf("failed to get info for archive file: %s", err)
+			logger.Errorf("failed to get info for archive file: %s", err)
 		}
 		jInfo, err := j.Info()
 		if err != nil {
-			logger.Fatalf("failed to get info for archive file: %s", err)
+			logger.Errorf("failed to get info for archive file: %s", err)
 		}
 		if iInfo.ModTime().Before(jInfo.ModTime()) {
 			return -1
@@ -91,7 +91,7 @@ func RotateArchive(logger *StandardLogger) {
 		oldest := files[i]
 		err := os.Remove(filepath.Clean(filepath.Join(logger.archiveDir, oldest.Name())))
 		if err != nil {
-			logger.Fatalf("failed to remove oldest archive file: %s", err)
+			logger.Errorf("failed to remove oldest archive file: %s", err)
 		}
 	}
 }

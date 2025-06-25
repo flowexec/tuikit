@@ -3,8 +3,8 @@ package views
 import (
 	"math"
 
-	"github.com/charmbracelet/bubbles/v2/viewport"
-	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jahvon/glamour"
 
 	"github.com/jahvon/tuikit/themes"
@@ -20,7 +20,7 @@ type MarkdownView struct {
 }
 
 func NewMarkdownView(state *types.RenderState, content string) *MarkdownView {
-	vp := viewport.New(viewport.WithWidth(state.ContentWidth), viewport.WithHeight(state.ContentHeight))
+	vp := viewport.New(state.ContentWidth, state.ContentHeight)
 	vp.Style = state.Theme.EntityViewStyle().Width(state.ContentWidth).Height(state.ContentHeight)
 	return &MarkdownView{
 		content:  content,
@@ -41,14 +41,14 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case types.RenderState:
 		v.width = msg.ContentWidth
 		v.height = msg.ContentHeight
-		v.viewport.SetWidth(v.width)
-		v.viewport.SetHeight(v.height)
+		v.viewport.Width = v.width
+		v.viewport.Height = v.height
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "up":
-			v.viewport.LineUp(1)
-		case "down":
-			v.viewport.LineDown(1)
+		case tea.KeyUp.String():
+			v.viewport.ScrollUp(1)
+		case tea.KeyDown.String():
+			v.viewport.ScrollDown(1)
 		}
 	}
 	var cmd tea.Cmd

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/charmbracelet/bubbles/v2/viewport"
-	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jahvon/glamour"
 
 	"github.com/jahvon/tuikit/themes"
@@ -42,7 +42,7 @@ func NewEntityView(
 		format = types.EntityFormatDocument
 	}
 
-	vp := viewport.New(viewport.WithWidth(state.ContentWidth), viewport.WithHeight(state.ContentHeight))
+	vp := viewport.New(state.ContentWidth, state.ContentHeight)
 	vp.Style = state.Theme.EntityViewStyle().Width(state.ContentWidth)
 	return &EntityView{
 		entity:    entity,
@@ -69,8 +69,8 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case types.RenderState:
-		v.viewport.SetWidth(msg.ContentWidth)
-		v.viewport.SetHeight(msg.ContentHeight)
+		v.viewport.Width = msg.ContentWidth
+		v.viewport.Height = msg.ContentHeight
 		v.viewport.SetContent(v.renderedContent())
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -92,10 +92,10 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			v.format = types.CollectionFormatJSON
 			v.viewport.GotoTop()
-		case "up":
-			v.viewport.LineUp(1)
-		case "down":
-			v.viewport.LineDown(1)
+		case tea.KeyUp.String():
+			v.viewport.ScrollUp(1)
+		case tea.KeyDown.String():
+			v.viewport.ScrollDown(1)
 		default:
 			for _, cb := range v.callbacks {
 				if cb.Key == msg.String() {

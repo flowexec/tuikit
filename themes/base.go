@@ -6,12 +6,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/charmbracelet/bubbles/v2/list"
-	"github.com/charmbracelet/bubbles/v2/spinner"
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/huh"
-	lipglossv1 "github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/v2"
-	"github.com/charmbracelet/lipgloss/v2/compat"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 )
 
@@ -194,23 +192,23 @@ func (t baseTheme) RenderInContainer(text string) string {
 }
 
 func (t baseTheme) ListStyles() list.Styles {
-	s := list.DefaultStyles(compat.HasDarkBackground)
+	s := list.DefaultStyles()
 	s.StatusBar = s.StatusBar.
 		Padding(0, 0, 1, 0).
 		Italic(true).
-		Foreground(lipglossv1.Color(t.Colors.Tertiary))
+		Foreground(lipgloss.Color(t.Colors.Tertiary))
 	return s
 }
 
 func (t baseTheme) ListItemStyles() list.DefaultItemStyles {
-	s := list.NewDefaultItemStyles(compat.HasDarkBackground)
-	s.NormalTitle = s.NormalTitle.Foreground(lipglossv1.Color(t.Colors.Secondary))
-	s.NormalDesc = s.NormalDesc.Foreground(lipglossv1.Color(t.Colors.Body))
+	s := list.NewDefaultItemStyles()
+	s.NormalTitle = s.NormalTitle.Foreground(lipgloss.Color(t.Colors.Secondary))
+	s.NormalDesc = s.NormalDesc.Foreground(lipgloss.Color(t.Colors.Body))
 
 	s.SelectedTitle = s.SelectedTitle.
 		Border(lipgloss.DoubleBorder(), false, false, false, true).
-		Foreground(lipglossv1.Color(t.Colors.Primary)).
-		BorderForeground(lipglossv1.Color(t.Colors.Primary)).
+		Foreground(lipgloss.Color(t.Colors.Primary)).
+		BorderForeground(lipgloss.Color(t.Colors.Primary)).
 		Bold(true)
 	s.SelectedDesc = s.SelectedDesc.
 		Border(lipgloss.HiddenBorder(), false, false, false, true).
@@ -220,18 +218,18 @@ func (t baseTheme) ListItemStyles() list.DefaultItemStyles {
 
 func (t baseTheme) LoggerStyles() *log.Styles {
 	baseStyles := log.DefaultStyles()
-	baseStyles.Timestamp = baseStyles.Timestamp.Foreground(lipglossv1.Color(t.Colors.Gray))
-	baseStyles.Levels = map[log.Level]lipglossv1.Style{
-		log.InfoLevel:  baseStyles.Levels[log.InfoLevel].Foreground(lipglossv1.Color(t.Colors.Info)).SetString("INF"),
-		LogNoticeLevel: baseStyles.Levels[LogNoticeLevel].Foreground(lipglossv1.Color(t.Colors.Warning)).SetString("NTC"),
-		log.WarnLevel:  baseStyles.Levels[log.WarnLevel].Foreground(lipglossv1.Color(t.Colors.Warning)).SetString("WRN"),
-		log.ErrorLevel: baseStyles.Levels[log.ErrorLevel].Foreground(lipglossv1.Color(t.Colors.Error)).SetString("ERR"),
-		log.DebugLevel: baseStyles.Levels[log.DebugLevel].Foreground(lipglossv1.Color(t.Colors.Emphasis)).SetString("DBG"),
-		log.FatalLevel: baseStyles.Levels[log.FatalLevel].Foreground(lipglossv1.Color(t.Colors.Error)).SetString("ERR"),
+	baseStyles.Timestamp = baseStyles.Timestamp.Foreground(lipgloss.Color(t.Colors.Gray))
+	baseStyles.Levels = map[log.Level]lipgloss.Style{
+		log.InfoLevel:  baseStyles.Levels[log.InfoLevel].Foreground(lipgloss.Color(t.Colors.Info)).SetString("INF"),
+		LogNoticeLevel: baseStyles.Levels[LogNoticeLevel].Foreground(lipgloss.Color(t.Colors.Warning)).SetString("NTC"),
+		log.WarnLevel:  baseStyles.Levels[log.WarnLevel].Foreground(lipgloss.Color(t.Colors.Warning)).SetString("WRN"),
+		log.ErrorLevel: baseStyles.Levels[log.ErrorLevel].Foreground(lipgloss.Color(t.Colors.Error)).SetString("ERR"),
+		log.DebugLevel: baseStyles.Levels[log.DebugLevel].Foreground(lipgloss.Color(t.Colors.Emphasis)).SetString("DBG"),
+		log.FatalLevel: baseStyles.Levels[log.FatalLevel].Foreground(lipgloss.Color(t.Colors.Error)).SetString("ERR"),
 	}
-	baseStyles.Message = baseStyles.Message.Foreground(lipglossv1.Color(t.Colors.Body))
-	baseStyles.Key = baseStyles.Key.Foreground(lipglossv1.Color(t.Colors.Secondary))
-	baseStyles.Value = baseStyles.Value.Foreground(lipglossv1.Color(t.Colors.Gray))
+	baseStyles.Message = baseStyles.Message.Foreground(lipgloss.Color(t.Colors.Body))
+	baseStyles.Key = baseStyles.Key.Foreground(lipgloss.Color(t.Colors.Secondary))
+	baseStyles.Value = baseStyles.Value.Foreground(lipgloss.Color(t.Colors.Gray))
 
 	return baseStyles
 }
@@ -254,50 +252,50 @@ func (t baseTheme) GlamourMarkdownStyleJSON() (string, error) {
 
 func (t baseTheme) HuhTheme() *huh.Theme {
 	baseTheme := huh.ThemeBase()
-	baseTheme.FieldSeparator = lipglossv1.NewStyle().SetString("\n\n")
+	baseTheme.FieldSeparator = lipgloss.NewStyle().SetString("\n\n")
 
-	baseTheme.Focused.Base = baseTheme.Focused.Base.BorderStyle(lipglossv1.HiddenBorder())
-	baseTheme.Focused.Title = baseTheme.Focused.Title.Foreground(lipglossv1.Color(t.Colors.Primary)).Bold(true)
-	baseTheme.Focused.Description = baseTheme.Focused.Description.Foreground(lipglossv1.Color(t.Colors.Body))
-	baseTheme.Focused.ErrorMessage = baseTheme.Focused.ErrorMessage.Foreground(lipglossv1.Color(t.Colors.Error))
-	baseTheme.Focused.FocusedButton = baseTheme.Focused.FocusedButton.Foreground(lipglossv1.Color(t.Colors.Primary)).
-		Background(lipglossv1.Color(t.Colors.Tertiary))
-	baseTheme.Focused.BlurredButton = baseTheme.Focused.BlurredButton.Foreground(lipglossv1.Color(t.Colors.Secondary)).
-		Background(lipglossv1.Color(t.Colors.Gray))
+	baseTheme.Focused.Base = baseTheme.Focused.Base.BorderStyle(lipgloss.HiddenBorder())
+	baseTheme.Focused.Title = baseTheme.Focused.Title.Foreground(lipgloss.Color(t.Colors.Primary)).Bold(true)
+	baseTheme.Focused.Description = baseTheme.Focused.Description.Foreground(lipgloss.Color(t.Colors.Body))
+	baseTheme.Focused.ErrorMessage = baseTheme.Focused.ErrorMessage.Foreground(lipgloss.Color(t.Colors.Error))
+	baseTheme.Focused.FocusedButton = baseTheme.Focused.FocusedButton.Foreground(lipgloss.Color(t.Colors.Primary)).
+		Background(lipgloss.Color(t.Colors.Tertiary))
+	baseTheme.Focused.BlurredButton = baseTheme.Focused.BlurredButton.Foreground(lipgloss.Color(t.Colors.Secondary)).
+		Background(lipgloss.Color(t.Colors.Gray))
 
 	baseTheme.Focused.TextInput.Placeholder =
-		baseTheme.Focused.TextInput.Placeholder.Foreground(lipglossv1.Color(t.Colors.Body))
+		baseTheme.Focused.TextInput.Placeholder.Foreground(lipgloss.Color(t.Colors.Body))
 	baseTheme.Focused.TextInput.Cursor =
-		baseTheme.Focused.TextInput.Cursor.Foreground(lipglossv1.Color(t.Colors.Secondary))
+		baseTheme.Focused.TextInput.Cursor.Foreground(lipgloss.Color(t.Colors.Secondary))
 	baseTheme.Focused.TextInput.CursorText =
-		baseTheme.Focused.TextInput.Cursor.Foreground(lipglossv1.Color(t.Colors.Secondary))
+		baseTheme.Focused.TextInput.Cursor.Foreground(lipgloss.Color(t.Colors.Secondary))
 	baseTheme.Focused.TextInput.Placeholder =
-		baseTheme.Focused.TextInput.Placeholder.Foreground(lipglossv1.Color(t.Colors.Gray))
+		baseTheme.Focused.TextInput.Placeholder.Foreground(lipgloss.Color(t.Colors.Gray))
 	baseTheme.Focused.TextInput.Text =
-		baseTheme.Focused.TextInput.Text.Foreground(lipglossv1.Color(t.Colors.Body))
+		baseTheme.Focused.TextInput.Text.Foreground(lipgloss.Color(t.Colors.Body))
 	baseTheme.Focused.TextInput.Prompt =
-		baseTheme.Focused.TextInput.Prompt.Foreground(lipglossv1.Color(t.Colors.Tertiary))
+		baseTheme.Focused.TextInput.Prompt.Foreground(lipgloss.Color(t.Colors.Tertiary))
 
-	baseTheme.Blurred.Title = baseTheme.Blurred.Title.Foreground(lipglossv1.Color(t.Colors.White))
-	baseTheme.Blurred.Description = baseTheme.Blurred.Description.Foreground(lipglossv1.Color(t.Colors.Gray))
-	baseTheme.Blurred.ErrorMessage = baseTheme.Blurred.ErrorMessage.Foreground(lipglossv1.Color(t.Colors.Emphasis))
-	baseTheme.Blurred.FocusedButton = baseTheme.Blurred.FocusedButton.Foreground(lipglossv1.Color(t.Colors.Secondary)).
-		Background(lipglossv1.Color(t.Colors.Gray))
-	baseTheme.Blurred.BlurredButton = baseTheme.Blurred.BlurredButton.Foreground(lipglossv1.Color(t.Colors.Gray)).
-		Background(lipglossv1.Color(t.Colors.Gray))
+	baseTheme.Blurred.Title = baseTheme.Blurred.Title.Foreground(lipgloss.Color(t.Colors.White))
+	baseTheme.Blurred.Description = baseTheme.Blurred.Description.Foreground(lipgloss.Color(t.Colors.Gray))
+	baseTheme.Blurred.ErrorMessage = baseTheme.Blurred.ErrorMessage.Foreground(lipgloss.Color(t.Colors.Emphasis))
+	baseTheme.Blurred.FocusedButton = baseTheme.Blurred.FocusedButton.Foreground(lipgloss.Color(t.Colors.Secondary)).
+		Background(lipgloss.Color(t.Colors.Gray))
+	baseTheme.Blurred.BlurredButton = baseTheme.Blurred.BlurredButton.Foreground(lipgloss.Color(t.Colors.Gray)).
+		Background(lipgloss.Color(t.Colors.Gray))
 
 	baseTheme.Blurred.TextInput.Placeholder = baseTheme.Blurred.TextInput.Placeholder.
-		Foreground(lipglossv1.Color(t.Colors.Gray))
+		Foreground(lipgloss.Color(t.Colors.Gray))
 	baseTheme.Blurred.TextInput.Cursor = baseTheme.Blurred.TextInput.Cursor.
-		Foreground(lipglossv1.Color(t.Colors.Gray))
+		Foreground(lipgloss.Color(t.Colors.Gray))
 	baseTheme.Blurred.TextInput.CursorText = baseTheme.Blurred.TextInput.CursorText.
-		Foreground(lipglossv1.Color(t.Colors.Gray))
+		Foreground(lipgloss.Color(t.Colors.Gray))
 	baseTheme.Blurred.TextInput.Placeholder = baseTheme.Blurred.TextInput.Placeholder.
-		Foreground(lipglossv1.Color(t.Colors.Gray))
+		Foreground(lipgloss.Color(t.Colors.Gray))
 	baseTheme.Blurred.TextInput.Text = baseTheme.Blurred.TextInput.Text.
-		Foreground(lipglossv1.Color(t.Colors.Gray))
+		Foreground(lipgloss.Color(t.Colors.Gray))
 	baseTheme.Blurred.TextInput.Prompt = baseTheme.Blurred.TextInput.Prompt.
-		Foreground(lipglossv1.Color(t.Colors.Gray))
+		Foreground(lipgloss.Color(t.Colors.Gray))
 
 	return baseTheme
 }

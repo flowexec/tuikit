@@ -1,14 +1,13 @@
 package views
 
 import (
-	tea "github.com/charmbracelet/bubbletea/v2"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 const FrameViewType = "frame"
 
 type FramedModel interface {
 	tea.Model
-	tea.ViewModel
 }
 
 type FrameView struct {

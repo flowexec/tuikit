@@ -48,7 +48,7 @@ jobs:
           go-version: "^1.24"
       - uses: jahvon/flow-action@v1.0.0-beta2
         with:
-          executable: 'test --param CI=true'
+          executable: 'test tui --param CI=true'
           timeout: '5m'
           flow-version: 'main'
       - name: Upload to codecov

@@ -84,7 +84,9 @@ executables:
           pos: 1
           default: podman
       cmd: |
-        $BUILDER run --rm -it -v "$PWD":/go/src/app -w /go/src/app golang:1.23-bookworm go test ./container_test.go
+        $BUILDER run --rm -it -v "$PWD":/go/src/app -w /go/src/app \
+          -e COLORFGBG=$COLORFGBG -e COLORTERM=$COLORTERM -e TERM=$TERM \
+          golang:1.23-bookworm go test ./container_test.go
 
   - verb: update
     name: snapshot
@@ -103,8 +105,9 @@ executables:
           pos: 1
           default: podman
       cmd: |
-        $BUILDER run --rm -it -v "$PWD":/go/src/app -w /go/src/app golang:1.23-bookworm go test -update ./container_test.go
-    
+        $BUILDER run --rm -it -v "$PWD":/go/src/app -w /go/src/app \
+          -e COLORFGBG=$COLORFGBG -e COLORTERM=$COLORTERM -e TERM=$TERM \
+          golang:1.23-bookworm go test -update ./container_test.go
 
   - verb: run
     name: sample

@@ -11,24 +11,30 @@ type StdOutWriter struct {
 	LogMode   *LogMode
 }
 
-//nolint:dupl // this is a slightly modified mirror of StdErrWriter
 func (w StdOutWriter) Write(p []byte) (n int, err error) {
-	if strings.TrimSpace(string(p)) == "" {
-		return len(p), nil
-	}
-	splitP := strings.Split(string(p), "\n")
-
 	curMode := w.Logger.LogMode()
 	if w.LogMode != nil && (*w.LogMode != "" && *w.LogMode != curMode) {
 		w.Logger.SetMode(*w.LogMode)
+		curMode = w.Logger.LogMode()
 	}
-	for _, line := range splitP {
-		switch w.Logger.LogMode() {
-		case Hidden:
+	defer func() {
+		if w.LogMode != nil && *w.LogMode != curMode {
+			w.Logger.SetMode(curMode)
+		}
+	}()
+
+	switch w.Logger.LogMode() {
+	case Hidden:
+		return len(p), nil
+	case Text:
+		w.Logger.Print(string(p))
+		return len(p), nil
+	case JSON, Logfmt:
+		if strings.TrimSpace(string(p)) == "" {
 			return len(p), nil
-		case Text:
-			w.Logger.Println(line)
-		case JSON, Logfmt:
+		}
+		splitP := strings.Split(string(p), "\n")
+		for _, line := range splitP {
 			if strings.TrimSpace(line) == "" {
 				continue
 			}
@@ -37,12 +43,9 @@ func (w StdOutWriter) Write(p []byte) (n int, err error) {
 			} else {
 				w.Logger.Infof(line)
 			}
-		default:
-			return len(p), fmt.Errorf("unknown log mode %v", w.LogMode)
 		}
-	}
-	if w.LogMode != nil && *w.LogMode != curMode {
-		w.Logger.SetMode(curMode)
+	default:
+		return len(p), fmt.Errorf("unknown log mode %v", curMode)
 	}
 
 	return len(p), nil
@@ -54,24 +57,29 @@ type StdErrWriter struct {
 	LogMode   *LogMode
 }
 
-//nolint:dupl // this is a slightly modified mirror of StdOutWriter
 func (w StdErrWriter) Write(p []byte) (n int, err error) {
-	if strings.TrimSpace(string(p)) == "" {
-		return len(p), nil
-	}
-	splitP := strings.Split(string(p), "\n")
-
 	curMode := w.Logger.LogMode()
 	if w.LogMode != nil && (*w.LogMode != "" && *w.LogMode != curMode) {
 		w.Logger.SetMode(*w.LogMode)
 	}
-	for _, line := range splitP {
-		switch w.Logger.LogMode() {
-		case Hidden:
+	defer func() {
+		if w.LogMode != nil && *w.LogMode != curMode {
+			w.Logger.SetMode(curMode)
+		}
+	}()
+
+	switch w.Logger.LogMode() {
+	case Hidden:
+		return len(p), nil
+	case Text:
+		w.Logger.Print(string(p))
+		return len(p), nil
+	case JSON, Logfmt:
+		if strings.TrimSpace(string(p)) == "" {
 			return len(p), nil
-		case Text:
-			w.Logger.PlainTextNotice(line)
-		case JSON, Logfmt:
+		}
+		splitP := strings.Split(string(p), "\n")
+		for _, line := range splitP {
 			if strings.TrimSpace(line) == "" {
 				continue
 			}
@@ -80,12 +88,9 @@ func (w StdErrWriter) Write(p []byte) (n int, err error) {
 			} else {
 				w.Logger.Noticef(line)
 			}
-		default:
-			return len(p), fmt.Errorf("unknown log mode %v", w.LogMode)
 		}
-	}
-	if w.LogMode != nil && *w.LogMode != curMode {
-		w.Logger.SetMode(curMode)
+	default:
+		return len(p), fmt.Errorf("unknown log mode %v", w.LogMode)
 	}
 
 	return len(p), nil

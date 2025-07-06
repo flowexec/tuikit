@@ -18,10 +18,7 @@ func TestStdOutWriter_WriteText(t *testing.T) {
 
 	input := []byte("line 1\nline 2\nline 3\n")
 	mockLogger.EXPECT().LogMode().Return(io.Text).AnyTimes()
-	mockLogger.EXPECT().Println("line 1")
-	mockLogger.EXPECT().Println("line 2")
-	mockLogger.EXPECT().Println("line 3")
-	mockLogger.EXPECT().Println("")
+	mockLogger.EXPECT().Print("line 1\nline 2\nline 3\n")
 
 	_, err := writer.Write(input)
 	if err != nil {
@@ -76,10 +73,7 @@ func TestStdErrWriter_WriteText(t *testing.T) {
 
 	input := []byte("line 1\nline 2\nline 3\n")
 	mockLogger.EXPECT().LogMode().Return(io.Text).AnyTimes()
-	mockLogger.EXPECT().PlainTextNotice("line 1")
-	mockLogger.EXPECT().PlainTextNotice("line 2")
-	mockLogger.EXPECT().PlainTextNotice("line 3")
-	mockLogger.EXPECT().PlainTextNotice("")
+	mockLogger.EXPECT().Print("line 1\nline 2\nline 3\n")
 
 	_, err := writer.Write(input)
 	if err != nil {

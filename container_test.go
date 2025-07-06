@@ -40,7 +40,7 @@ func TestFrameOutput(t *testing.T) {
 
 	container.Send(tea.Quit(), 100*time.Millisecond)
 	tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
-	out, err := io.ReadAll(tm.Output())
+	out, err := io.ReadAll(tm.FinalOutput(t))
 	if err != nil {
 		t.Error(err)
 	}

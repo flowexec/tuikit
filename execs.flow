@@ -86,6 +86,26 @@ executables:
       cmd: |
         $BUILDER run --rm -it -v "$PWD":/go/src/app -w /go/src/app golang:1.23-bookworm go test ./container_test.go
 
+  - verb: update
+    name: snapshot
+    description: Update the snapshot test golden files
+    exec:
+      dir: //
+      params:
+        - envKey: COLORFGBG
+          text: 15;0
+        - envKey: COLORTERM
+          text: truecolor
+        - envKey: TERM
+          text: xterm-256color
+      args:
+        - envKey: BUILDER
+          pos: 1
+          default: podman
+      cmd: |
+        $BUILDER run --rm -it -v "$PWD":/go/src/app -w /go/src/app golang:1.23-bookworm go test -update ./container_test.go
+    
+
   - verb: run
     name: sample
     description: Run the sample container program

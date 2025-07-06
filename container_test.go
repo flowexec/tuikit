@@ -40,7 +40,7 @@ func TestFrameOutput(t *testing.T) {
 
 	container.Send(tea.Quit(), 100*time.Millisecond)
 	tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
-	out, err := io.ReadAll(tm.Output())
+	out, err := io.ReadAll(tm.FinalOutput(t))
 	if err != nil {
 		t.Error(err)
 	}
@@ -165,7 +165,7 @@ func TestCollectionOutput(t *testing.T) {
 		t.Errorf("Failed to set view: %v", err)
 	}
 
-	container.Send(tea.Quit(), 500*time.Millisecond)
+	container.Send(tea.Quit(), 10*time.Millisecond)
 	tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
 	out, err := io.ReadAll(tm.FinalOutput(t))
 	if err != nil {

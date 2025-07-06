@@ -4,13 +4,6 @@ executables:
   - verb: validate
     description: Run all development checks
     serial:
-      params:
-        - envKey: COLORFGBG
-          text: 15;0
-        - envKey: COLORTERM
-          text: truecolor
-        - envKey: TERM
-          text: xterm-256color
       execs:
         - ref: generate
         - ref: lint
@@ -25,6 +18,13 @@ executables:
     description: Run tests with coverage
     serial:
       dir: //
+      params:
+        - envKey: COLORFGBG
+          text: 15;0
+        - envKey: COLORTERM
+          text: truecolor
+        - envKey: TERM
+          text: xterm-256color
       execs:
         # TODO: Add -race flag when the container becomes thread safe
         - cmd: |

@@ -16,11 +16,6 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    env:
-      GO111MODULE: on
-      COLORTERM: "truecolor"
-      COLORFGBG: "15;0"
-      TERM: "xterm-256color"
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go

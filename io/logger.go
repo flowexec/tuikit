@@ -25,7 +25,7 @@ type StandardLogger struct {
 	archiveDir     string
 	archiveFile    *os.File
 	outFile        *os.File
-	exitFunc       func()
+	exitFunc       func(msg string, args ...any)
 }
 
 type LoggerOptions func(*StandardLogger)
@@ -70,7 +70,7 @@ func WithArchiveDirectory(path string) LoggerOptions {
 	}
 }
 
-func WithExitFunc(exit func()) LoggerOptions {
+func WithExitFunc(exit func(msg string, args ...any)) LoggerOptions {
 	return func(logger *StandardLogger) {
 		logger.exitFunc = exit
 	}
@@ -276,7 +276,7 @@ func (l *StandardLogger) Fatalf(msg string, args ...any) {
 	switch l.mode {
 	case Text:
 		l.PlainTextError(fmt.Sprintf(msg, args...))
-		l.exitFunc()
+		l.exitFunc(msg, args...)
 		return
 	case Hidden:
 		return
@@ -438,6 +438,6 @@ func (l *StandardLogger) syncLoggerFormat() {
 	}
 }
 
-func defaultExit() {
+func defaultExit(_ string, args ...any) {
 	os.Exit(1)
 }

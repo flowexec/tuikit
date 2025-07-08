@@ -1,4 +1,4 @@
-module github.com/jahvon/tuikit
+module github.com/flowexec/tuikit
 
 go 1.23.0
 

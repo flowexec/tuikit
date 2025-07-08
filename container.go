@@ -11,9 +11,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/jahvon/tuikit/themes"
-	"github.com/jahvon/tuikit/types"
-	"github.com/jahvon/tuikit/views"
+	"github.com/flowexec/tuikit/themes"
+	"github.com/flowexec/tuikit/types"
+	"github.com/flowexec/tuikit/views"
 )
 
 type View interface {

@@ -8,8 +8,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jahvon/glamour"
 
-	"github.com/jahvon/tuikit/themes"
-	"github.com/jahvon/tuikit/types"
+	"github.com/flowexec/tuikit/themes"
+	"github.com/flowexec/tuikit/types"
 )
 
 type EntityView struct {

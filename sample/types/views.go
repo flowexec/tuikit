@@ -7,7 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"gopkg.in/yaml.v3"
 
-	"github.com/jahvon/tuikit/types"
+	"github.com/flowexec/tuikit/types"
 )
 
 type Echo struct {

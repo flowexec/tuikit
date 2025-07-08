@@ -7,10 +7,10 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/jahvon/tuikit"
-	sampleTypes "github.com/jahvon/tuikit/sample/types"
-	"github.com/jahvon/tuikit/types"
-	"github.com/jahvon/tuikit/views"
+	"github.com/flowexec/tuikit"
+	sampleTypes "github.com/flowexec/tuikit/sample/types"
+	"github.com/flowexec/tuikit/types"
+	"github.com/flowexec/tuikit/views"
 )
 
 func main() {

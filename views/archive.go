@@ -13,9 +13,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/wordwrap"
 
-	"github.com/jahvon/tuikit/io"
-	"github.com/jahvon/tuikit/themes"
-	"github.com/jahvon/tuikit/types"
+	"github.com/flowexec/tuikit/io"
+	"github.com/flowexec/tuikit/themes"
+	"github.com/flowexec/tuikit/types"
 )
 
 type LogArchiveView struct {

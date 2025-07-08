@@ -15,8 +15,8 @@ import (
 	"github.com/charmbracelet/huh"
 	"golang.org/x/term"
 
-	"github.com/jahvon/tuikit/themes"
-	"github.com/jahvon/tuikit/types"
+	"github.com/flowexec/tuikit/themes"
+	"github.com/flowexec/tuikit/types"
 )
 
 type FormFieldType uint

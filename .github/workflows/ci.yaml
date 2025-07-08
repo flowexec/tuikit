@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "^1.24"
-      - uses: jahvon/flow-action@v1.0.0-beta2
+      - uses: flowexec/action@v1
         with:
           executable: 'lint --param CI=true'
           timeout: '5m'
@@ -41,7 +41,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "^1.24"
-      - uses: jahvon/flow-action@v1.0.0-beta2
+      - uses: flowexec/action@v1
         with:
           executable: 'test tui --param CI=true'
           timeout: '5m'
@@ -64,13 +64,13 @@ jobs:
           go-version: "^1.24"
       - name: Install mockgen
         run: go install go.uber.org/mock/mockgen@v0.4.0
-      - uses: jahvon/flow-action@v1.0.0-beta2
+      - uses: flowexec/action@v1
         with:
           executable: 'generate'
           timeout: '10m'
           flow-version: 'main'
       - name: Check for uncommitted changes
-        uses: jahvon/flow-action@v1.0.0-beta2
+        uses: flowexec/action@v1
         with:
           executable: 'validate generated'
           timeout: '2m'
@@ -84,7 +84,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "^1.24"
-      - uses: jahvon/flow-action@v1.0.0-beta2
+      - uses: flowexec/action@v1
         with:
           executable: 'scan security'
           timeout: '10m'

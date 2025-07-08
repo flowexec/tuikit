@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/muesli/termenv"
 
-	"github.com/jahvon/tuikit/themes"
+	"github.com/flowexec/tuikit/themes"
 )
 
 var (

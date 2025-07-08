@@ -1,8 +1,8 @@
 # Terminal UI Kit 
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/jahvon/tuikit)](https://goreportcard.com/report/github.com/jahvon/tuikit)
-[![Go Reference](https://pkg.go.dev/badge/github.com/jahvon/tuikit.svg)](https://pkg.go.dev/github.com/jahvon/tuikit)
-[![GitHub release](https://img.shields.io/github/v/release/jahvon/tuikit)](https://github.com/jahvon/tuikit/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/flowexec/tuikit)](https://goreportcard.com/report/github.com/flowexec/tuikit)
+[![Go Reference](https://pkg.go.dev/badge/github.com/flowexec/tuikit.svg)](https://pkg.go.dev/github.com/flowexec/tuikit)
+[![GitHub release](https://img.shields.io/github/v/release/flowexec/tuikit)](https://github.com/flowexec/tuikit/releases)
 
 This repo contains types, interfaces, and utilities for building terminal user interfaces in Go.
 It's an opinionated framework that uses [charm](https://charm.sh) TUI components and packages for rendering
@@ -13,7 +13,7 @@ and handling terminal events.
 First, install the package:
 
 ```bash
-go get -u github.com/jahvon/tuikit@latest
+go get -u github.com/flowexec/tuikit@latest
 ```
 
 You can then use the package in your Go code:
@@ -24,8 +24,8 @@ package main
 import (
     "context"
 
-    "github.com/jahvon/tuikit"
-    "github.com/jahvon/tuikit/views"
+    "github.com/flowexec/tuikit"
+    "github.com/flowexec/tuikit/views"
 )
 
 func main() {

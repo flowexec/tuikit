@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/jahvon/tuikit/themes"
+	"github.com/flowexec/tuikit/themes"
 )
 
 var TickTime = time.Millisecond * 250

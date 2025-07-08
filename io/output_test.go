@@ -5,8 +5,8 @@ import (
 
 	"go.uber.org/mock/gomock"
 
-	"github.com/jahvon/tuikit/io"
-	"github.com/jahvon/tuikit/io/mocks"
+	"github.com/flowexec/tuikit/io"
+	"github.com/flowexec/tuikit/io/mocks"
 )
 
 func TestStdOutWriter_WriteText(t *testing.T) {

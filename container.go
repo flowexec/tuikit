@@ -79,6 +79,14 @@ func NewContainer(
 }
 
 func (c *Container) Start() error {
+	if c.program.Started() {
+		return nil
+	} else if c.program.Suspended() {
+		if err := c.program.Resume(); err != nil {
+			return fmt.Errorf("unable to resume program - %w", err)
+		}
+	}
+
 	go func() {
 		_, err := c.program.Run()
 		if err != nil && !errors.Is(err, tea.ErrProgramKilled) {
@@ -260,7 +268,9 @@ func (c *Container) Ready() bool {
 func (c *Container) Shutdown(finalizers ...func()) {
 	fin := make(chan struct{})
 	c.finalizing = &fin
+	_ = c.program.program.ReleaseTerminal()
 	c.program.program.Kill()
+	fmt.Println() // Ensure a new line after the program is killed
 	for _, f := range finalizers {
 		f()
 	}

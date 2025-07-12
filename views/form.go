@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -119,6 +120,7 @@ type Form struct {
 	completed bool
 
 	in, out *os.File
+	mu      sync.RWMutex
 }
 
 // NewForm creates a new form model that can be run in a Bubble Tea program. It includes some extra handling
@@ -228,10 +230,15 @@ func (f *Form) Completed() bool {
 }
 
 func (f *Form) Init() tea.Cmd {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	return f.form.Init()
 }
 
 func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	if f.err != nil {
 		return f.err.Update(msg)
 	}
@@ -260,6 +267,9 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (f *Form) View() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+
 	if f.err != nil {
 		return f.err.View()
 	}

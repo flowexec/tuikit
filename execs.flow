@@ -26,15 +26,14 @@ executables:
         - envKey: TERM
           text: xterm-256color
       execs:
-        # TODO: Add -race flag when the container becomes thread safe
         - cmd: |
             set -e
             echo "Running Go unit tests..."
             if [ "$CI" = "true" ]; then
               echo "Running Go unit tests with coverage..."
-              go test -coverprofile=coverage.out -covermode=atomic ./...
+              go test -race -coverprofile=coverage.out -covermode=atomic ./...
             else
-              go test ./...
+              go test -race ./...
             fi
             echo "Unit tests completed"
           retries: 3

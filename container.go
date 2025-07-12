@@ -285,6 +285,10 @@ func (c *Container) Shutdown(finalizers ...func()) {
 	close(fin)
 }
 
+func (c *Container) Program() *Program {
+	return c.program
+}
+
 func (c *Container) Height() int {
 	c.stateMu.RLock()
 	defer c.stateMu.RUnlock()

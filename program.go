@@ -31,6 +31,13 @@ func NewProgram(ctx context.Context, model tea.Model, in io.Reader, out io.Write
 	}
 }
 
+func (p *Program) SetTeaProgram(program *tea.Program) {
+	if p.started || p.suspended {
+		panic("cannot set program after it has started or suspended")
+	}
+	p.program = program
+}
+
 func (p *Program) Run() (tea.Model, error) {
 	if p.started || p.suspended {
 		return nil, fmt.Errorf("program already started")

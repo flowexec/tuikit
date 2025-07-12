@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,6 +36,9 @@ type Container struct {
 	previousView, currentView, nextView View
 	showHelp                            bool
 	finalizing                          *chan struct{}
+
+	viewMu  sync.RWMutex
+	stateMu sync.RWMutex
 }
 
 type ContainerOptions func(*Container)
@@ -52,9 +56,11 @@ func NewContainer(
 
 	ctxx, cancel := context.WithCancel(ctx)
 	c := &Container{
-		ctx:    ctxx,
-		cancel: cancel,
-		app:    app,
+		ctx:     ctxx,
+		cancel:  cancel,
+		app:     app,
+		viewMu:  sync.RWMutex{},
+		stateMu: sync.RWMutex{},
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -148,6 +154,7 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.QuitMsg:
 		return c, tea.Quit
 	case tea.WindowSizeMsg:
+		c.stateMu.Lock()
 		c.render = &types.RenderState{
 			Width:         msg.Width,
 			Height:        msg.Height,
@@ -155,6 +162,7 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ContentHeight: msg.Height - (themes.HeaderHeight + themes.FooterHeight),
 			Theme:         c.render.Theme,
 		}
+		c.stateMu.Unlock()
 		if c.CurrentView().Type() == views.FormViewType {
 			fwdMsg = tea.WindowSizeMsg{Width: c.render.ContentWidth, Height: c.render.ContentHeight}
 		} else {
@@ -278,18 +286,26 @@ func (c *Container) Shutdown(finalizers ...func()) {
 }
 
 func (c *Container) Height() int {
+	c.stateMu.RLock()
+	defer c.stateMu.RUnlock()
 	return c.render.Height
 }
 
 func (c *Container) ContentHeight() int {
+	c.stateMu.RLock()
+	defer c.stateMu.RUnlock()
 	return c.render.ContentHeight
 }
 
 func (c *Container) Width() int {
+	c.stateMu.RLock()
+	defer c.stateMu.RUnlock()
 	return c.render.Width
 }
 
 func (c *Container) ContentWidth() int {
+	c.stateMu.RLock()
+	defer c.stateMu.RUnlock()
 	return c.render.ContentWidth
 }
 
@@ -309,13 +325,17 @@ func (c *Container) SetView(v View) error {
 	case !c.Ready():
 		c.SetNextView(v)
 	case switching:
-		c.previousView = c.CurrentView()
+		c.viewMu.Lock()
+		c.previousView = c.currentView
+		c.viewMu.Unlock()
 		fallthrough
 	default:
+		c.viewMu.Lock()
 		c.currentView = v
 		if c.currentView == c.nextView {
 			c.nextView = nil
 		}
+		c.viewMu.Unlock()
 		cmd := c.CurrentView().Init()
 		if cmd != nil {
 			c.Send(cmd, 0)
@@ -345,26 +365,38 @@ func (c *Container) Send(msg tea.Msg, delay time.Duration) {
 }
 
 func (c *Container) SetNextView(v View) {
+	c.viewMu.Lock()
 	c.nextView = v
+	c.viewMu.Unlock()
 }
 
 func (c *Container) CurrentView() View {
+	c.viewMu.RLock()
+	defer c.viewMu.RUnlock()
 	return c.currentView
 }
 
 func (c *Container) PreviousView() View {
+	c.viewMu.RLock()
+	defer c.viewMu.RUnlock()
 	return c.previousView
 }
 
 func (c *Container) NextView() View {
+	c.viewMu.RLock()
+	defer c.viewMu.RUnlock()
 	return c.nextView
 }
 
 func (c *Container) SizeSet() bool {
+	c.stateMu.RLock()
+	defer c.stateMu.RUnlock()
 	return c.render.Width > 0 && c.render.Height > 0 && c.render.ContentWidth > 0 && c.render.ContentHeight > 0
 }
 
 func (c *Container) RenderState() *types.RenderState {
+	c.stateMu.RLock()
+	defer c.stateMu.RUnlock()
 	return c.render
 }
 

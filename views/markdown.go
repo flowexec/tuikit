@@ -2,6 +2,7 @@ package views
 
 import (
 	"math"
+	"sync"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,6 +18,7 @@ type MarkdownView struct {
 	err           *ErrorView
 	theme         themes.Theme
 	width, height int
+	mu            sync.RWMutex
 }
 
 func NewMarkdownView(state *types.RenderState, content string) *MarkdownView {
@@ -30,10 +32,15 @@ func NewMarkdownView(state *types.RenderState, content string) *MarkdownView {
 }
 
 func (v *MarkdownView) Init() tea.Cmd {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 	return v.viewport.Init()
 }
 
 func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
 	if v.err != nil {
 		return v.err.Update(msg)
 	}
@@ -57,6 +64,9 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (v *MarkdownView) View() string {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
 	mdStyles, err := v.theme.GlamourMarkdownStyleJSON()
 	if err != nil {
 		v.err = NewErrorView(err, v.theme)

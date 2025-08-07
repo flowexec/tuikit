@@ -9,6 +9,7 @@ import (
 
 	"github.com/flowexec/tuikit"
 	sampleTypes "github.com/flowexec/tuikit/sample/types"
+	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
 	"github.com/flowexec/tuikit/views"
 )
@@ -53,6 +54,107 @@ func main() {
 			&types.EntityInfo{ID: "mark", Header: "Mark Twain", SubHeader: "American Author"},
 		)
 		view = views.NewCollectionView(container.RenderState(), c, types.CollectionFormatList, nil)
+	case "table":
+		// Define columns (percentages must add up to 100)
+		columns := []views.TableColumn{
+			{Title: "Workspace", Percentage: 40},
+			{Title: "Description", Percentage: 35},
+			{Title: "Status", Percentage: 25},
+		}
+
+		// Create sample data with expandable rows
+		rows := []views.TableRow{
+			{
+				Data: []string{"flow-workspace", "Main development workspace", "Active"},
+				Children: []views.TableRow{
+					{Data: []string{"docs", "Documentation namespace", "5 exec"}},
+					{Data: []string{"api", "API services namespace", "12 exec"}},
+					{Data: []string{"frontend", "UI components", "8 exec"}},
+				},
+			},
+			{
+				Data: []string{"home-lab", "Infrastructure automation", "Inactive"},
+				Children: []views.TableRow{
+					{Data: []string{"k8s", "Kubernetes deployments", "15 exec"}},
+					{Data: []string{"monitoring", "Observability stack", "6 exec"}},
+				},
+			},
+			{
+				Data:     []string{"personal-tools", "Personal utility scripts", "Active"},
+				Children: []views.TableRow{}, // No children
+			},
+		}
+
+		// Create table in full-screen mode
+		table := views.NewTable(container.RenderState(), columns, rows, views.TableDisplayFull)
+
+		// Set up callbacks
+		table.SetOnSelect(func(index int) error {
+			selectedRow := table.GetSelectedRow()
+			if selectedRow != nil {
+				container.SetNotice(fmt.Sprintf("Selected: %s", selectedRow.Data()[0]), themes.OutputLevelInfo)
+			}
+			return nil
+		})
+
+		table.SetOnHover(func(index int) {
+			selectedRow := table.GetSelectedRow()
+			if selectedRow != nil {
+				container.SetState("Current", selectedRow.Data()[0])
+			}
+		})
+
+		view = views.NewFrameView(table)
+	case "table-mini":
+		// Single column mini table example
+		columns := []views.TableColumn{
+			{Title: "Available Executables", Percentage: 100},
+		}
+
+		rows := []views.TableRow{
+			{Data: []string{"build app"}},
+			{Data: []string{"test unit"}},
+			{Data: []string{"deploy staging"}},
+			{Data: []string{"deploy production"}},
+			{Data: []string{"clean artifacts"}},
+		}
+
+		table := views.NewTable(container.RenderState(), columns, rows, views.TableDisplayMini)
+
+		table.SetOnSelect(func(index int) error {
+			selectedRow := table.GetSelectedRow()
+			if selectedRow != nil {
+				container.SetNotice(fmt.Sprintf("Executing: %s", selectedRow.Data()[0]), themes.OutputLevelInfo)
+			}
+			return nil
+		})
+
+		view = views.NewFrameView(table)
+	case "table-mini-multi":
+		// Multi-column mini table example
+		columns := []views.TableColumn{
+			{Title: "Template", Percentage: 60},
+			{Title: "Type", Percentage: 40},
+		}
+
+		rows := []views.TableRow{
+			{Data: []string{"k8s-deployment", "Kubernetes"}},
+			{Data: []string{"react-app", "Frontend"}},
+			{Data: []string{"go-service", "Backend"}},
+			{Data: []string{"terraform-module", "Infrastructure"}},
+		}
+
+		table := views.NewTable(container.RenderState(), columns, rows, views.TableDisplayMini)
+
+		table.SetOnSelect(func(index int) error {
+			selectedRow := table.GetSelectedRow()
+			if selectedRow != nil {
+				container.SetNotice(fmt.Sprintf("Selected template: %s (%s)", selectedRow.Data()[0], selectedRow.Data()[1]), themes.OutputLevelInfo)
+			}
+			return nil
+		})
+
+		view = views.NewFrameView(table)
 	case "form":
 		f, err := views.NewFormView(
 			container.RenderState(),

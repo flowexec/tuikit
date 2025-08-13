@@ -38,11 +38,7 @@ func (w StdOutWriter) Write(p []byte) (n int, err error) {
 			if strings.TrimSpace(line) == "" {
 				continue
 			}
-			if len(w.LogFields) > 0 {
-				w.Logger.Infox(line, w.LogFields...)
-			} else {
-				w.Logger.Infof(line)
-			}
+			w.Logger.Info(line, w.LogFields...)
 		}
 	default:
 		return len(p), fmt.Errorf("unknown log mode %v", curMode)
@@ -83,11 +79,7 @@ func (w StdErrWriter) Write(p []byte) (n int, err error) {
 			if strings.TrimSpace(line) == "" {
 				continue
 			}
-			if len(w.LogFields) > 0 {
-				w.Logger.Noticex(line, w.LogFields...)
-			} else {
-				w.Logger.Noticef(line)
-			}
+			w.Logger.Notice(line, w.LogFields...)
 		}
 	default:
 		return len(p), fmt.Errorf("unknown log mode %v", w.LogMode)

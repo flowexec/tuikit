@@ -37,10 +37,10 @@ func TestStdOutWriter_WriteLogFmt(t *testing.T) {
 
 	input := []byte("line 1\nline 2\nline 3\nline 4")
 	mockLogger.EXPECT().LogMode().Return(io.Logfmt).AnyTimes()
-	mockLogger.EXPECT().Infox("line 1", fields...)
-	mockLogger.EXPECT().Infox("line 2", fields...)
-	mockLogger.EXPECT().Infox("line 3", fields...)
-	mockLogger.EXPECT().Infox("line 4", fields...)
+	mockLogger.EXPECT().Info("line 1", fields...)
+	mockLogger.EXPECT().Info("line 2", fields...)
+	mockLogger.EXPECT().Info("line 3", fields...)
+	mockLogger.EXPECT().Info("line 4", fields...)
 
 	_, err := writer.Write(input)
 	if err != nil {
@@ -92,10 +92,10 @@ func TestStdErrWriter_WriteLogFmt(t *testing.T) {
 
 	input := []byte("line 1\nline 2\nline 3\nline 4")
 	mockLogger.EXPECT().LogMode().Return(io.Logfmt).AnyTimes()
-	mockLogger.EXPECT().Noticex("line 1", fields...)
-	mockLogger.EXPECT().Noticex("line 2", fields...)
-	mockLogger.EXPECT().Noticex("line 3", fields...)
-	mockLogger.EXPECT().Noticex("line 4", fields...)
+	mockLogger.EXPECT().Notice("line 1", fields...)
+	mockLogger.EXPECT().Notice("line 2", fields...)
+	mockLogger.EXPECT().Notice("line 3", fields...)
+	mockLogger.EXPECT().Notice("line 4", fields...)
 
 	_, err := writer.Write(input)
 	if err != nil {

@@ -339,7 +339,7 @@ func readPipedInput(in *os.File, fields []*FormField) error {
 		if err != nil && !errors.Is(err, io.EOF) {
 			return fmt.Errorf("error reading input line: %w", err)
 		} else if line == "" && errors.Is(err, io.EOF) {
-			return fmt.Errorf("not enough input lines")
+			return nil
 		}
 		if !field.Required && line == "" && field.Default != "" {
 			line = field.Default

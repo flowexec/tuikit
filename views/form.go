@@ -230,10 +230,15 @@ func (f *Form) Completed() bool {
 }
 
 func (f *Form) Init() tea.Cmd {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	return f.form.Init()
 }
 
 func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	if f.err != nil {
 		return f.err.Update(msg)
 	}

@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"sync"
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
@@ -18,13 +19,18 @@ type LoadingView struct {
 	theme   themes.Theme
 	msg     string
 	spinner spinner.Model
+	mu      sync.RWMutex
 }
 
 func (v *LoadingView) Init() tea.Cmd {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
 	return v.spinner.Tick
 }
 
 func (v *LoadingView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case error:
@@ -37,6 +43,8 @@ func (v *LoadingView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (v *LoadingView) View() tea.View {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
 	var txt string
 	if v.msg == "" {
 		txt = fmt.Sprintf("\n\n %s %s\n\n", v.spinner.View(), v.theme.RenderInfo(DefaultLoading))

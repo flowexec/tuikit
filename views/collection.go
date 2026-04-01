@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jahvon/glamour"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/glamour/v2"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -90,7 +90,7 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		v.width = msg.ContentWidth
 		v.height = msg.ContentHeight
 		v.model.SetSize(v.width, v.height)
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "-", "l":
 			if v.format == types.CollectionFormatList {
@@ -107,7 +107,7 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return v, nil
 			}
 			v.format = types.CollectionFormatJSON
-		case tea.KeyEnter.String():
+		case types.KeyEnter:
 			if v.selectedFunc == nil {
 				return v, nil
 			}
@@ -152,7 +152,7 @@ func (v *CollectionView) Items() []list.Item {
 	return v.model.Items()
 }
 
-func (v *CollectionView) renderedContent() string {
+func (v *CollectionView) renderedView() tea.View {
 	var content string
 	var isMkdwn bool
 	var err error
@@ -184,7 +184,7 @@ func (v *CollectionView) renderedContent() string {
 	}
 
 	if !isMkdwn {
-		return content
+		return tea.View{Content: content}
 	}
 
 	mdStyles, err := v.styles.GlamourMarkdownStyleJSON()
@@ -206,15 +206,15 @@ func (v *CollectionView) renderedContent() string {
 		v.err = NewErrorView(err, v.styles)
 		return v.err.View()
 	}
-	return viewStr
+	return tea.View{Content: viewStr}
 }
 
-func (v *CollectionView) View() string {
+func (v *CollectionView) View() tea.View {
 	if v.err != nil {
 		return v.err.View()
 	}
 
-	return v.renderedContent()
+	return v.renderedView()
 }
 
 func (v *CollectionView) HelpMsg() string {

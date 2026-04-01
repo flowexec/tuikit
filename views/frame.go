@@ -1,7 +1,7 @@
 package views
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 const FrameViewType = "frame"
@@ -22,7 +22,7 @@ func (v *FrameView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v.model.Update(msg)
 }
 
-func (v *FrameView) View() string {
+func (v *FrameView) View() tea.View {
 	return v.model.View()
 }
 

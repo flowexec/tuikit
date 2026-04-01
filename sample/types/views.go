@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"gopkg.in/yaml.v3"
 
 	"github.com/flowexec/tuikit/types"
@@ -22,11 +22,11 @@ func (m *Echo) Update(_ tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *Echo) View() string {
+func (m *Echo) View() tea.View {
 	if m.Content == "" {
-		return "Hello, World!"
+		return tea.NewView("Hello, World!")
 	}
-	return m.Content
+	return tea.NewView(m.Content)
 }
 
 type Thing struct {

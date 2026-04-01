@@ -3,9 +3,9 @@ package views
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -59,8 +59,8 @@ func (v *DetailView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		v.height = msg.ContentHeight
 		v.theme = msg.Theme
 		v.syncViewport()
-	case tea.KeyMsg:
-		halfPage := max(v.viewport.Height/2, 1)
+	case tea.KeyPressMsg:
+		halfPage := max(v.viewport.Height()/2, 1)
 		switch msg.String() {
 		case "k":
 			v.viewport.ScrollUp(1)
@@ -82,7 +82,7 @@ func (v *DetailView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, cmd
 }
 
-func (v *DetailView) View() string {
+func (v *DetailView) View() tea.View {
 	metaStr := v.renderMetadata()
 	v.viewport.SetContent(v.body)
 
@@ -92,7 +92,7 @@ func (v *DetailView) View() string {
 	}
 	sections = append(sections, v.renderBodyBox())
 
-	return lipgloss.JoinVertical(lipgloss.Left, sections...)
+	return tea.View{Content: lipgloss.JoinVertical(lipgloss.Left, sections...)}
 }
 
 func (v *DetailView) HelpMsg() string {
@@ -122,8 +122,8 @@ func (v *DetailView) syncViewport() {
 	bodyChrome := 4
 	vpHeight := max(v.height-v.metadataHeight-bodyChrome, 1)
 
-	v.viewport.Width = v.width - 8 // account for border + padding
-	v.viewport.Height = vpHeight
+	v.viewport.SetHeight(vpHeight)
+	v.viewport.SetWidth(v.width - 8) // account for border + padding
 }
 
 func (v *DetailView) calcMetadataHeight() int {

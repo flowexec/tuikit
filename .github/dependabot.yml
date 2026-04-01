@@ -30,6 +30,7 @@ updates:
           - "github.com/onsi/gomega"
       charmbracelet-deps:
         patterns:
+          - "charm.land/*"
           - "github.com/charmbracelet/*"
   - package-ecosystem: "docker"
     directory: "/"

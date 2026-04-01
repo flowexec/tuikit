@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"golang.org/x/term"
 
 	"github.com/flowexec/tuikit/themes"
@@ -266,7 +266,7 @@ func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return f, cmd
 }
 
-func (f *Form) View() string {
+func (f *Form) View() tea.View {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
@@ -274,7 +274,7 @@ func (f *Form) View() string {
 		return f.err.View()
 	}
 
-	return f.form.View()
+	return tea.View{Content: f.form.View()}
 }
 
 func (f *Form) HelpMsg() string {

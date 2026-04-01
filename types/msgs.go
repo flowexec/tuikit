@@ -3,12 +3,19 @@ package types
 import (
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/flowexec/tuikit/themes"
 )
 
 var TickTime = time.Millisecond * 250
+
+// Key name strings returned by KeyPressMsg.String().
+const (
+	KeyUp    = "up"
+	KeyDown  = "down"
+	KeyEnter = "enter"
+)
 
 type TickMsg time.Time
 type SubmitMsg struct{}

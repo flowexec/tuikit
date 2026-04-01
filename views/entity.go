@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jahvon/glamour"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/glamour/v2"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -42,7 +42,7 @@ func NewEntityView(
 		format = types.EntityFormatDocument
 	}
 
-	vp := viewport.New(state.ContentWidth, state.ContentHeight)
+	vp := viewport.New(viewport.WithWidth(state.ContentWidth), viewport.WithHeight(state.ContentHeight))
 	vp.Style = state.Theme.EntityViewStyle().Width(state.ContentWidth)
 	return &EntityView{
 		entity:    entity,
@@ -69,10 +69,10 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case types.RenderState:
-		v.viewport.Width = msg.ContentWidth
-		v.viewport.Height = msg.ContentHeight
-		v.viewport.SetContent(v.renderedContent())
-	case tea.KeyMsg:
+		v.viewport.SetWidth(msg.ContentWidth)
+		v.viewport.SetHeight(msg.ContentHeight)
+		v.viewport.SetContent(v.renderedView().Content)
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "-", "d":
 			if v.format == types.EntityFormatDocument {
@@ -92,9 +92,9 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			v.format = types.CollectionFormatJSON
 			v.viewport.GotoTop()
-		case tea.KeyUp.String():
+		case types.KeyUp:
 			v.viewport.ScrollUp(1)
-		case tea.KeyDown.String():
+		case types.KeyDown:
 			v.viewport.ScrollDown(1)
 		default:
 			for _, cb := range v.callbacks {
@@ -110,7 +110,7 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, cmd
 }
 
-func (v *EntityView) renderedContent() string {
+func (v *EntityView) renderedView() tea.View {
 	var content string
 	var err error
 	switch v.format {
@@ -155,15 +155,15 @@ func (v *EntityView) renderedContent() string {
 		v.err = NewErrorView(err, v.styles)
 		return v.err.View()
 	}
-	return viewStr
+	return tea.View{Content: viewStr}
 }
 
-func (v *EntityView) View() string {
+func (v *EntityView) View() tea.View {
 	if v.err != nil {
 		return v.err.View()
 	}
-	v.viewport.SetContent(v.renderedContent())
-	return v.viewport.View()
+	v.viewport.SetContent(v.renderedView().Content)
+	return tea.View{Content: v.viewport.View()}
 }
 
 func (v *EntityView) HelpMsg() string {

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/log/v2"
 )
 
 const (
@@ -25,6 +25,7 @@ type baseTheme struct {
 	Name        string          `json:"-" yaml:"-"`
 	SpinnerType spinner.Spinner `json:"-" yaml:"-"`
 	Colors      *ColorPalette
+	isDark      bool
 }
 
 func (t baseTheme) String() string {
@@ -192,7 +193,7 @@ func (t baseTheme) RenderInContainer(text string) string {
 }
 
 func (t baseTheme) ListStyles() list.Styles {
-	s := list.DefaultStyles()
+	s := list.DefaultStyles(t.isDark)
 	s.StatusBar = s.StatusBar.
 		Padding(0, 0, 1, 0).
 		Italic(true).
@@ -201,7 +202,7 @@ func (t baseTheme) ListStyles() list.Styles {
 }
 
 func (t baseTheme) ListItemStyles() list.DefaultItemStyles {
-	s := list.NewDefaultItemStyles()
+	s := list.NewDefaultItemStyles(t.isDark)
 	s.NormalTitle = s.NormalTitle.Foreground(lipgloss.Color(t.Colors.Secondary))
 	s.NormalDesc = s.NormalDesc.Foreground(lipgloss.Color(t.Colors.Body))
 
@@ -250,8 +251,12 @@ func (t baseTheme) GlamourMarkdownStyleJSON() (string, error) {
 	return builder.String(), nil
 }
 
-func (t baseTheme) HuhTheme() *huh.Theme {
-	baseTheme := huh.ThemeBase()
+func (t baseTheme) HuhTheme() huh.Theme {
+	return huh.ThemeFunc(t.huhStyles)
+}
+
+func (t baseTheme) huhStyles(isDark bool) *huh.Styles {
+	baseTheme := huh.ThemeBase(isDark)
 	baseTheme.FieldSeparator = lipgloss.NewStyle().SetString("\n\n")
 
 	baseTheme.Focused.Base = baseTheme.Focused.Base.BorderStyle(lipgloss.HiddenBorder())

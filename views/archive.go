@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
 
 	"github.com/flowexec/tuikit/io"
@@ -86,7 +86,7 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			time.Sleep(time.Second)
 			return v, tea.Quit
 		}
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "x":
 			if v.activeEntry != nil {
@@ -125,7 +125,7 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			v.model.SetItems(v.items)
-		case tea.KeyEnter.String():
+		case types.KeyEnter:
 			if v.activeEntry != nil {
 				return v, nil
 			}
@@ -147,7 +147,7 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, cmd
 }
 
-func (v *LogArchiveView) View() string {
+func (v *LogArchiveView) View() tea.View {
 	if v.err != nil {
 		return v.err.View()
 	}
@@ -172,7 +172,7 @@ func (v *LogArchiveView) View() string {
 		style := v.styles.BoxStyle().Width(v.width)
 		content = style.Render(v.model.View())
 	}
-	return content
+	return tea.View{Content: content}
 }
 
 func (v *LogArchiveView) HelpMsg() string {

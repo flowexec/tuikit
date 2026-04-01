@@ -1,11 +1,11 @@
 package themes
 
 import (
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/log/v2"
 )
 
 type Theme interface {
@@ -38,5 +38,5 @@ type Theme interface {
 
 	LoggerStyles() *log.Styles
 	GlamourMarkdownStyleJSON() (string, error)
-	HuhTheme() *huh.Theme
+	HuhTheme() huh.Theme
 }

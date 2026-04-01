@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 type Program struct {

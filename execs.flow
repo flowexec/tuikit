@@ -133,10 +133,10 @@ executables:
         - cmd: |
             if ! command -v golangci-lint &> /dev/null; then
               echo "Installing golangci-lint..."
-              curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v2.1.6
+              curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v2.11.4
               export PATH="$PATH:./bin"
             fi
-            
+
             if [ "$CI" = "true" ]; then
               echo "Running golangci-lint with sarif output..."
               golangci-lint run ./... --fix --output.sarif.path lint.sarif
@@ -155,7 +155,7 @@ executables:
           echo "Installing govulncheck..."
           go install golang.org/x/vuln/cmd/govulncheck@latest
         fi
-        
+
         if [ "$CI" = "true" ]; then
           govulncheck -format sarif ./... > govuln.sarif
           echo "Security scan completed. Results saved to govuln.sarif"

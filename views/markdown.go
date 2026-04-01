@@ -4,9 +4,9 @@ import (
 	"math"
 	"sync"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jahvon/glamour"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/glamour/v2"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -22,7 +22,7 @@ type MarkdownView struct {
 }
 
 func NewMarkdownView(state *types.RenderState, content string) *MarkdownView {
-	vp := viewport.New(state.ContentWidth, state.ContentHeight)
+	vp := viewport.New(viewport.WithWidth(state.ContentWidth), viewport.WithHeight(state.ContentHeight))
 	vp.Style = state.Theme.EntityViewStyle().Width(state.ContentWidth).Height(state.ContentHeight)
 	return &MarkdownView{
 		content:  content,
@@ -48,13 +48,13 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case types.RenderState:
 		v.width = msg.ContentWidth
 		v.height = msg.ContentHeight
-		v.viewport.Width = v.width
-		v.viewport.Height = v.height
-	case tea.KeyMsg:
+		v.viewport.SetWidth(v.width)
+		v.viewport.SetHeight(v.height)
+	case tea.KeyPressMsg:
 		switch msg.String() {
-		case tea.KeyUp.String():
+		case types.KeyUp:
 			v.viewport.ScrollUp(1)
-		case tea.KeyDown.String():
+		case types.KeyDown:
 			v.viewport.ScrollDown(1)
 		}
 	}
@@ -63,7 +63,7 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, cmd
 }
 
-func (v *MarkdownView) View() string {
+func (v *MarkdownView) View() tea.View {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
@@ -91,7 +91,7 @@ func (v *MarkdownView) View() string {
 		return v.err.View()
 	}
 	v.viewport.SetContent(viewStr)
-	return v.viewport.View()
+	return tea.View{Content: v.viewport.View()}
 }
 
 func (v *MarkdownView) HelpMsg() string {

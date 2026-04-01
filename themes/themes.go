@@ -2,8 +2,10 @@ package themes
 
 import (
 	_ "embed"
+	"os"
 
-	"github.com/charmbracelet/bubbles/spinner"
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/lipgloss/v2"
 )
 
 const (
@@ -16,7 +18,12 @@ const (
 
 func NewTheme(name string, cp ColorPalette) Theme {
 	colors := WithDefaultColors(cp)
-	return baseTheme{Name: name, SpinnerType: spinner.Points, Colors: &colors}
+	return baseTheme{
+		Name:        name,
+		SpinnerType: spinner.Points,
+		Colors:      &colors,
+		isDark:      lipgloss.HasDarkBackground(os.Stdin, os.Stdout),
+	}
 }
 
 type ThemeFunc func() Theme

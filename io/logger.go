@@ -236,14 +236,14 @@ func (l *StandardLogger) Debugf(msg string, args ...any) {
 	}
 }
 
-func (l *StandardLogger) Error(err error, msg string) {
+func (l *StandardLogger) WrapError(err error, msg string) {
 	if msg == "" {
-		l.Errorf(err.Error())
+		l.Error(err.Error())
 		return
 	} else if l.mode == Hidden {
 		return
 	}
-	l.Errorx(err.Error(), "err", err)
+	l.Error(err.Error(), "err", err)
 }
 
 func (l *StandardLogger) Errorf(msg string, args ...any) {
@@ -299,7 +299,7 @@ func (l *StandardLogger) Fatalf(msg string, args ...any) {
 	}
 }
 
-func (l *StandardLogger) Infox(msg string, kv ...any) {
+func (l *StandardLogger) Info(msg string, kv ...any) {
 	l.syncLoggerFormat()
 	if l.mode == Hidden {
 		return
@@ -310,7 +310,7 @@ func (l *StandardLogger) Infox(msg string, kv ...any) {
 	}
 }
 
-func (l *StandardLogger) Noticex(msg string, kv ...any) {
+func (l *StandardLogger) Notice(msg string, kv ...any) {
 	if l.mode == Hidden {
 		return
 	}
@@ -321,7 +321,7 @@ func (l *StandardLogger) Noticex(msg string, kv ...any) {
 	}
 }
 
-func (l *StandardLogger) Debugx(msg string, kv ...any) {
+func (l *StandardLogger) Debug(msg string, kv ...any) {
 	if l.mode == Hidden {
 		return
 	}
@@ -332,7 +332,7 @@ func (l *StandardLogger) Debugx(msg string, kv ...any) {
 	}
 }
 
-func (l *StandardLogger) Errorx(msg string, kv ...any) {
+func (l *StandardLogger) Error(msg string, kv ...any) {
 	if l.mode == Hidden {
 		return
 	}
@@ -343,7 +343,7 @@ func (l *StandardLogger) Errorx(msg string, kv ...any) {
 	}
 }
 
-func (l *StandardLogger) Warnx(msg string, kv ...any) {
+func (l *StandardLogger) Warn(msg string, kv ...any) {
 	if l.mode == Hidden {
 		return
 	}
@@ -354,7 +354,7 @@ func (l *StandardLogger) Warnx(msg string, kv ...any) {
 	}
 }
 
-func (l *StandardLogger) Fatalx(msg string, kv ...any) {
+func (l *StandardLogger) Fatal(msg string, kv ...any) {
 	l.syncLoggerFormat()
 	if l.archiveHandler != nil {
 		l.archiveHandler.Error(msg, kv...)
@@ -449,6 +449,6 @@ func (l *StandardLogger) syncLoggerFormat() {
 	}
 }
 
-func defaultExit(_ string, args ...any) {
+func defaultExit(_ string, _ ...any) {
 	os.Exit(1)
 }

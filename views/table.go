@@ -1,6 +1,7 @@
 package views
 
 import (
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -36,6 +37,7 @@ type Table struct {
 	displayMode TableDisplayMode
 
 	selectedIndex int
+	scrollOffset  int
 	visibleRows   []VisibleRow
 
 	OnSelect func(index int) error
@@ -76,39 +78,51 @@ func (t *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case *types.RenderState:
 		t.render = msg
-		return t, nil
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "up", "k":
-			if t.selectedIndex > 0 {
-				t.selectedIndex--
-				if t.OnHover != nil {
-					t.OnHover(t.selectedIndex)
-				}
-			}
-		case "down", "j":
-			if t.selectedIndex < len(t.visibleRows)-1 {
-				t.selectedIndex++
-				if t.OnHover != nil {
-					t.OnHover(t.selectedIndex)
-				}
-			}
-		case "enter":
-			if t.OnSelect != nil {
-				return t, func() tea.Msg {
-					err := t.OnSelect(t.selectedIndex)
-					if err != nil {
-						return err
-					}
-					return nil
-				}
-			}
-		case " ", "tab":
-			t.toggleExpansion()
-			t.buildVisibleRows()
-		}
+		return t, t.handleKeyMsg(msg)
 	}
 	return t, nil
+}
+
+func (t *Table) handleKeyMsg(msg tea.KeyMsg) tea.Cmd {
+	switch msg.String() {
+	case "up", "k":
+		t.moveCursor(-1)
+	case "down", "j":
+		t.moveCursor(1)
+	case "enter":
+		return t.selectRow()
+	case " ", "tab":
+		t.toggleExpansion()
+		t.buildVisibleRows()
+		t.ensureSelectedVisible()
+	}
+	return nil
+}
+
+func (t *Table) moveCursor(delta int) {
+	next := t.selectedIndex + delta
+	if next < 0 || next >= len(t.visibleRows) {
+		return
+	}
+	t.selectedIndex = next
+	t.ensureSelectedVisible()
+	if t.OnHover != nil {
+		t.OnHover(t.selectedIndex)
+	}
+}
+
+func (t *Table) selectRow() tea.Cmd {
+	if t.OnSelect == nil {
+		return nil
+	}
+	return func() tea.Msg {
+		err := t.OnSelect(t.selectedIndex)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 }
 
 func (t *Table) View() string {
@@ -125,18 +139,47 @@ func (t *Table) View() string {
 	content.WriteString(header)
 	content.WriteString("\n")
 
-	for i, row := range t.visibleRows {
-		rowStr := t.renderRow(row, colWidths, i == t.selectedIndex)
+	maxRows := t.maxVisibleRows()
+	start := t.scrollOffset
+	end := min(start+maxRows, len(t.visibleRows))
+
+	if start > 0 {
+		scrollHint := lipgloss.NewStyle().
+			Foreground(t.render.Theme.ColorPalette().GrayColor()).
+			Width(tableWidth).Align(lipgloss.Center).
+			Render(fmt.Sprintf("↑ %d more", start))
+		content.WriteString(scrollHint)
+		content.WriteString("\n")
+	}
+
+	for i := start; i < end; i++ {
+		rowStr := t.renderRow(t.visibleRows[i], colWidths, i == t.selectedIndex)
 		content.WriteString(rowStr)
 		content.WriteString("\n")
 	}
 
-	result := content.String()
-	if t.displayMode == TableDisplayMini && t.showBorder {
-		return t.renderMiniTable(result, tableWidth)
+	remaining := len(t.visibleRows) - end
+	if remaining > 0 {
+		scrollHint := lipgloss.NewStyle().
+			Foreground(t.render.Theme.ColorPalette().GrayColor()).
+			Width(tableWidth).Align(lipgloss.Center).
+			Render(fmt.Sprintf("↓ %d more", remaining))
+		content.WriteString(scrollHint)
+		content.WriteString("\n")
 	}
 
-	return result
+	result := content.String()
+
+	if t.displayMode == TableDisplayMini && t.showBorder {
+		result = t.renderMiniTable(result, tableWidth)
+	}
+
+	// Pad to fill available height so the table occupies the full content area.
+	rendered := lipgloss.NewStyle().
+		Width(t.render.ContentWidth).
+		Height(t.render.ContentHeight).
+		Render(result)
+	return rendered
 }
 
 func (t *Table) HelpMsg() string {
@@ -225,55 +268,59 @@ func (t *Table) renderHeader(colWidths []int) string {
 	return header
 }
 
+func (t *Table) rowStyle(row VisibleRow, selected bool) lipgloss.Style {
+	cp := t.render.Theme.ColorPalette()
+	switch {
+	case selected:
+		return lipgloss.NewStyle().
+			Background(cp.PrimaryColor()).
+			Foreground(cp.GrayColor()).Bold(true)
+	case row.isChild:
+		return lipgloss.NewStyle().Foreground(cp.TertiaryColor())
+	default:
+		return lipgloss.NewStyle().Foreground(cp.BodyColor())
+	}
+}
+
+func (t *Table) cellPrefix(row VisibleRow, colIdx int, selected bool) string {
+	if colIdx != 0 {
+		return ""
+	}
+	if row.isChild {
+		if selected {
+			return "  > "
+		}
+		return "    "
+	}
+	if row.rowIdx < 0 {
+		return ""
+	}
+	children := t.rows[row.rowIdx].Children
+	switch {
+	case len(children) > 0 && t.rows[row.rowIdx].Expanded:
+		return "◉ "
+	case len(children) > 0:
+		return "● "
+	default:
+		return "◌ "
+	}
+}
+
 func (t *Table) renderRow(row VisibleRow, colWidths []int, selected bool) string {
 	var rowStr strings.Builder
-
-	var style lipgloss.Style
-	if selected {
-		style = lipgloss.NewStyle().
-			Background(t.render.Theme.ColorPalette().PrimaryColor()).
-			Foreground(t.render.Theme.ColorPalette().GrayColor()).Bold(true)
-	} else if row.isChild {
-		style = lipgloss.NewStyle().
-			Foreground(t.render.Theme.ColorPalette().TertiaryColor())
-	} else {
-		style = lipgloss.NewStyle().
-			Foreground(t.render.Theme.ColorPalette().BodyColor())
-	}
+	style := t.rowStyle(row, selected)
 
 	for i, cellData := range row.data {
 		if i >= len(colWidths) {
 			break
 		}
 
-		content := cellData
-		if i == 0 && !row.isChild && row.rowIdx >= 0 {
-			if len(t.rows[row.rowIdx].Children) > 0 {
-				if t.rows[row.rowIdx].Expanded {
-					content = "◉ " + content
-				} else {
-					content = "● " + content
-				}
-			} else {
-				content = "◌ " + content
-			}
-		}
-
-		if i == 0 && row.isChild {
-			if selected {
-				content = "  > " + content
-			} else {
-				content = "    " + content
-			}
-		}
-
+		content := t.cellPrefix(row, i, selected) + cellData
 		maxLen := colWidths[i] - 1
-		if len(content) > maxLen {
-			if maxLen > 3 {
-				content = content[:maxLen-3] + "..."
-			} else {
-				content = content[:maxLen]
-			}
+		if len(content) > maxLen && maxLen > 3 {
+			content = content[:maxLen-3] + "..."
+		} else if len(content) > maxLen {
+			content = content[:maxLen]
 		}
 
 		cellContent := style.Width(colWidths[i] - 1).Render(content)
@@ -284,18 +331,51 @@ func (t *Table) renderRow(row VisibleRow, colWidths []int, selected bool) string
 }
 
 func (t *Table) renderMiniTable(content string, tableWidth int) string {
-	leftPadding := (t.render.ContentWidth - tableWidth) / 2
-	if leftPadding < 0 {
-		leftPadding = 0
-	}
+	leftPadding := max((t.render.ContentWidth-tableWidth)/2, 0)
+	topMargin := 1
+	// Border takes 2 lines (top+bottom), padding takes 2 lines (top+bottom)
+	boxHeight := max(t.render.ContentHeight-topMargin-2-2, 1)
 
 	borderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(t.render.Theme.ColorPalette().BorderColor()).
 		Padding(1).
-		MarginLeft(leftPadding)
+		MarginLeft(leftPadding).
+		MarginTop(topMargin).
+		Height(boxHeight)
 
 	return borderStyle.Render(content)
+}
+
+func (t *Table) maxVisibleRows() int {
+	if t.render == nil || t.render.ContentHeight <= 0 {
+		return len(t.visibleRows)
+	}
+	// Reserve lines for: header (2 lines: title + border), scroll hints (up to 2 lines)
+	available := t.render.ContentHeight - 2
+	if t.displayMode == TableDisplayMini {
+		// Mini mode border + padding takes extra space
+		available -= 4
+	}
+	if available < 1 {
+		available = 1
+	}
+	if available >= len(t.visibleRows) {
+		return len(t.visibleRows)
+	}
+	return available
+}
+
+func (t *Table) ensureSelectedVisible() {
+	maxRows := t.maxVisibleRows()
+	if t.selectedIndex < t.scrollOffset {
+		t.scrollOffset = t.selectedIndex
+	} else if t.selectedIndex >= t.scrollOffset+maxRows {
+		t.scrollOffset = t.selectedIndex - maxRows + 1
+	}
+	if t.scrollOffset < 0 {
+		t.scrollOffset = 0
+	}
 }
 
 func (t *Table) buildVisibleRows() {

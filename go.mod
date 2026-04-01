@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/x/exp/teatest/v2 v2.0.0-20260330094520-2dce04b6f8a4
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.16.0
-	go.uber.org/mock v0.5.2
+	go.uber.org/mock v0.6.0
 	golang.org/x/term v0.41.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -52,10 +52,10 @@ require (
 	github.com/yuin/goldmark v1.7.8 // indirect
 	github.com/yuin/goldmark-emoji v1.0.5 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
-	golang.org/x/mod v0.18.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
-	golang.org/x/tools v0.22.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/tools v0.36.0 // indirect
 )

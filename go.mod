@@ -9,7 +9,7 @@ require (
 	charm.land/huh/v2 v2.0.0
 	charm.land/lipgloss/v2 v2.0.2
 	charm.land/log/v2 v2.0.0
-	github.com/charmbracelet/colorprofile v0.4.2
+	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/charmbracelet/x/exp/teatest/v2 v2.0.0-20260330094520-2dce04b6f8a4
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.16.0

@@ -23,6 +23,7 @@ type StandardLogger struct {
 	theme          themes.Theme
 	mode           LogMode
 	archiveDir     string
+	archiveID      string
 	archiveFile    *os.File
 	outFile        *os.File
 	exitFunc       func(msg string, args ...any)
@@ -50,24 +51,29 @@ func WithOutput(file *os.File) LoggerOptions {
 
 func WithArchiveDirectory(path string) LoggerOptions {
 	return func(logger *StandardLogger) {
-		if path == "" {
-			return
-		}
 		logger.archiveDir = path
-		archiveFile := NewArchiveLogFile(path)
-		archiveHandler := log.NewWithOptions(
-			archiveFile,
-			log.Options{
-				ReportTimestamp: true,
-				ReportCaller:    false,
-				Level:           log.DebugLevel,
-			},
-		)
-		applyStorageFormat(archiveHandler)
-		logger.archiveFile = archiveFile
-		logger.archiveHandler = archiveHandler
-		RotateArchive(logger)
 	}
+}
+
+func WithArchiveID(id string) LoggerOptions {
+	return func(logger *StandardLogger) {
+		logger.archiveID = id
+	}
+}
+
+func setupArchive(logger *StandardLogger) {
+	archiveFile := NewArchiveLogFile(logger.archiveDir, logger.archiveID)
+	archiveHandler := log.NewWithOptions(
+		archiveFile,
+		log.Options{
+			ReportTimestamp: true,
+			ReportCaller:    false,
+			Level:           log.DebugLevel,
+		},
+	)
+	applyStorageFormat(archiveHandler)
+	logger.archiveFile = archiveFile
+	logger.archiveHandler = archiveHandler
 }
 
 func WithExitFunc(exit func(msg string, args ...any)) LoggerOptions {
@@ -100,6 +106,11 @@ func NewLogger(opts ...LoggerOptions) *StandardLogger {
 	stdOutHandler := log.NewWithOptions(logger.outFile, log.Options{Level: log.InfoLevel, ReportCaller: false})
 	applyHumanReadableFormat(stdOutHandler, logger.theme, logger.mode)
 	logger.outHandler = stdOutHandler
+
+	if logger.archiveDir != "" {
+		setupArchive(logger)
+		RotateArchive(logger.archiveDir)
+	}
 
 	return logger
 }
@@ -356,8 +367,8 @@ func (l *StandardLogger) PlainTextInfo(msg string) {
 		return
 	}
 	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderInfo(msg))
-	if l.archiveFile != nil {
-		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	if l.archiveHandler != nil {
+		l.archiveHandler.Info(msg)
 	}
 }
 
@@ -366,8 +377,8 @@ func (l *StandardLogger) PlainTextNotice(msg string) {
 		return
 	}
 	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderNotice(msg))
-	if l.archiveFile != nil {
-		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	if l.archiveHandler != nil {
+		l.archiveHandler.With().Log(themes.LogNoticeLevel, msg)
 	}
 }
 
@@ -376,15 +387,15 @@ func (l *StandardLogger) PlainTextSuccess(msg string) {
 		return
 	}
 	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderSuccess(msg))
-	if l.archiveFile != nil {
-		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	if l.archiveHandler != nil {
+		l.archiveHandler.Info(msg)
 	}
 }
 
 func (l *StandardLogger) PlainTextError(msg string) {
 	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderError(msg))
-	if l.archiveFile != nil {
-		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	if l.archiveHandler != nil {
+		l.archiveHandler.Error(msg)
 	}
 }
 
@@ -393,8 +404,8 @@ func (l *StandardLogger) PlainTextWarn(msg string) {
 		return
 	}
 	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderWarning(msg))
-	if l.archiveFile != nil {
-		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	if l.archiveHandler != nil {
+		l.archiveHandler.Warn(msg)
 	}
 }
 
@@ -403,8 +414,8 @@ func (l *StandardLogger) PlainTextDebug(msg string) {
 		return
 	}
 	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderEmphasis(msg))
-	if l.archiveFile != nil {
-		_, _ = fmt.Fprintln(l.archiveFile, msg)
+	if l.archiveHandler != nil {
+		l.archiveHandler.Debug(msg)
 	}
 }
 

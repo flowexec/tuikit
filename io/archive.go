@@ -17,13 +17,13 @@ const (
 )
 
 type ArchiveEntry struct {
-	Args string
+	ID   string
 	Time time.Time
 	Path string
 }
 
 func (e ArchiveEntry) Title() string {
-	return e.Args
+	return e.ID
 }
 func (e ArchiveEntry) Description() string {
 	return e.Time.Format("03:04PM 01/02/2006")
@@ -43,7 +43,7 @@ func (e ArchiveEntry) Read() (string, error) {
 	return string(data), nil
 }
 
-func NewArchiveLogFile(archiveDir string) *os.File {
+func NewArchiveLogFile(archiveDir, id string) *os.File {
 	if dir, err := os.Stat(archiveDir); os.IsNotExist(err) {
 		err := os.MkdirAll(archiveDir, 0750)
 		if err != nil {
@@ -52,20 +52,21 @@ func NewArchiveLogFile(archiveDir string) *os.File {
 	} else if !dir.IsDir() {
 		panic(fmt.Errorf("archive directory is not a directory"))
 	}
-	writer, err := os.Create(filepath.Clean(filepath.Join(archiveDir, NewArchiveFileName())))
+	writer, err := os.Create(filepath.Clean(filepath.Join(archiveDir, NewArchiveFileName(id))))
 	if err != nil {
 		panic(fmt.Errorf("failed to create archive log file: %w", err))
 	}
 	return writer
 }
 
-func RotateArchive(logger *StandardLogger) {
-	if logger.archiveDir == "" {
+func RotateArchive(archiveDir string) {
+	if archiveDir == "" {
 		return
 	}
-	files, err := os.ReadDir(logger.archiveDir)
+	files, err := os.ReadDir(archiveDir)
 	if err != nil {
-		logger.Errorf("failed to read archive directory: %s", err)
+		fmt.Fprintf(os.Stderr, "tuikit/io: failed to read archive directory: %v\n", err)
+		return
 	}
 	if len(files) <= MaxArchiveSize {
 		return
@@ -73,11 +74,11 @@ func RotateArchive(logger *StandardLogger) {
 	slices.SortFunc(files, func(i, j os.DirEntry) int {
 		iInfo, err := i.Info()
 		if err != nil {
-			logger.Errorf("failed to get info for archive file: %s", err)
+			fmt.Fprintf(os.Stderr, "tuikit/io: failed to get info for archive file: %v\n", err)
 		}
 		jInfo, err := j.Info()
 		if err != nil {
-			logger.Errorf("failed to get info for archive file: %s", err)
+			fmt.Fprintf(os.Stderr, "tuikit/io: failed to get info for archive file: %v\n", err)
 		}
 		if iInfo.ModTime().Before(jInfo.ModTime()) {
 			return -1
@@ -89,9 +90,9 @@ func RotateArchive(logger *StandardLogger) {
 
 	for i := 0; i < len(files)-MaxArchiveSize; i++ {
 		oldest := files[i]
-		err := os.Remove(filepath.Clean(filepath.Join(logger.archiveDir, oldest.Name())))
+		err := os.Remove(filepath.Clean(filepath.Join(archiveDir, oldest.Name())))
 		if err != nil {
-			logger.Errorf("failed to remove oldest archive file: %s", err)
+			fmt.Fprintf(os.Stderr, "tuikit/io: failed to remove oldest archive file: %v\n", err)
 		}
 	}
 }
@@ -118,12 +119,12 @@ func ListArchiveEntries(archiveDir string) ([]ArchiveEntry, error) {
 		} else if info.Size() == 0 {
 			continue
 		}
-		args, ts, err := ParseArchiveFileMetadata(file.Name())
+		id, ts, err := ParseArchiveFileMetadata(file.Name())
 		if err != nil {
 			continue
 		}
 		entries = append(entries, ArchiveEntry{
-			Args: args,
+			ID:   id,
 			Time: ts,
 			Path: filepath.Clean(filepath.Join(archiveDir, file.Name())),
 		})
@@ -144,24 +145,40 @@ func DeleteArchiveEntry(entryPath string) error {
 	return os.Remove(filepath.Clean(entryPath))
 }
 
-func NewArchiveFileName() string {
-	args := os.Args
-	argsStr := url.QueryEscape(strings.Join(args[1:], " "))
-	return fmt.Sprintf("%s__%s.log", argsStr, time.Now().Local().Format(LogEntryTimeFormat))
+func NewArchiveFileName(id string) string {
+	safeID := sanitizeArchiveID(id)
+	if safeID == "" {
+		safeID = "session"
+	}
+	return fmt.Sprintf("%s__%s.log", safeID, time.Now().Local().Format(LogEntryTimeFormat))
 }
 
-func ParseArchiveFileMetadata(name string) (args string, ts time.Time, err error) {
+func ParseArchiveFileMetadata(name string) (id string, ts time.Time, err error) {
 	parts := strings.Split(strings.TrimSuffix(filepath.Base(name), ".log"), "__")
 	if len(parts) != 2 {
 		return "", time.Time{}, errors.New("invalid archive file name")
 	}
-	args, err = url.QueryUnescape(parts[0])
-	if err != nil {
-		return "", time.Time{}, err
+	rawID := parts[0]
+	// Legacy: old filenames used URL-encoded os.Args; decode them gracefully
+	if strings.Contains(rawID, "%") {
+		if decoded, decErr := url.QueryUnescape(rawID); decErr == nil {
+			rawID = decoded
+		}
 	}
+	id = rawID
 	ts, err = time.Parse(LogEntryTimeFormat, parts[1])
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	return args, ts, nil
+	return id, ts, nil
+}
+
+func sanitizeArchiveID(id string) string {
+	return strings.Map(func(r rune) rune {
+		switch r {
+		case '/', '\\', ':', '*', '?', '"', '<', '>', '|', '\x00':
+			return '_'
+		}
+		return r
+	}, id)
 }

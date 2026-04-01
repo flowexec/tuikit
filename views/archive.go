@@ -125,7 +125,7 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			v.model.SetItems(v.items)
-		case "enter":
+		case types.KeyEnter:
 			if v.activeEntry != nil {
 				return v, nil
 			}

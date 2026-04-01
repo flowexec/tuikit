@@ -86,11 +86,11 @@ func (t *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (t *Table) handleKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
-	case "up", "k":
+	case types.KeyUp, "k":
 		t.moveCursor(-1)
-	case "down", "j":
+	case types.KeyDown, "j":
 		t.moveCursor(1)
-	case "enter":
+	case types.KeyEnter:
 		return t.selectRow()
 	case "space", "tab":
 		t.toggleExpansion()

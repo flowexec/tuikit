@@ -10,6 +10,13 @@ import (
 
 var TickTime = time.Millisecond * 250
 
+// Key name strings returned by KeyPressMsg.String().
+const (
+	KeyUp    = "up"
+	KeyDown  = "down"
+	KeyEnter = "enter"
+)
+
 type TickMsg time.Time
 type SubmitMsg struct{}
 type ReplaceViewMsg struct{}

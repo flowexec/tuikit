@@ -52,9 +52,9 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		v.viewport.SetHeight(v.height)
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		case "up":
+		case types.KeyUp:
 			v.viewport.ScrollUp(1)
-		case "down":
+		case types.KeyDown:
 			v.viewport.ScrollDown(1)
 		}
 	}

@@ -92,9 +92,9 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			v.format = types.CollectionFormatJSON
 			v.viewport.GotoTop()
-		case "up":
+		case types.KeyUp:
 			v.viewport.ScrollUp(1)
-		case "down":
+		case types.KeyDown:
 			v.viewport.ScrollDown(1)
 		default:
 			for _, cb := range v.callbacks {

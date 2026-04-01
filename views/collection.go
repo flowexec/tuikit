@@ -107,7 +107,7 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return v, nil
 			}
 			v.format = types.CollectionFormatJSON
-		case "enter":
+		case types.KeyEnter:
 			if v.selectedFunc == nil {
 				return v, nil
 			}

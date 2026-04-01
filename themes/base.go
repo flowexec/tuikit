@@ -252,9 +252,7 @@ func (t baseTheme) GlamourMarkdownStyleJSON() (string, error) {
 }
 
 func (t baseTheme) HuhTheme() huh.Theme {
-	return huh.ThemeFunc(func(isDark bool) *huh.Styles {
-		return t.huhStyles(isDark)
-	})
+	return huh.ThemeFunc(t.huhStyles)
 }
 
 func (t baseTheme) huhStyles(isDark bool) *huh.Styles {

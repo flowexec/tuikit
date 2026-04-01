@@ -4,9 +4,9 @@ import (
 	"math"
 	"sync"
 
-	"github.com/charmbracelet/bubbles/v2/viewport"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/jahvon/glamour"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/glamour/v2"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -50,12 +50,12 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		v.height = msg.ContentHeight
 		v.viewport.SetWidth(v.width)
 		v.viewport.SetHeight(v.height)
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "up":
-			v.viewport.LineUp(1)
+			v.viewport.ScrollUp(1)
 		case "down":
-			v.viewport.LineDown(1)
+			v.viewport.ScrollDown(1)
 		}
 	}
 	var cmd tea.Cmd
@@ -63,7 +63,7 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, cmd
 }
 
-func (v *MarkdownView) View() string {
+func (v *MarkdownView) View() tea.View {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
@@ -91,7 +91,7 @@ func (v *MarkdownView) View() string {
 		return v.err.View()
 	}
 	v.viewport.SetContent(viewStr)
-	return v.viewport.View()
+	return tea.View{Content: v.viewport.View()}
 }
 
 func (v *MarkdownView) HelpMsg() string {

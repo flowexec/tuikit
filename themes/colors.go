@@ -3,11 +3,12 @@ package themes
 import (
 	"encoding/json"
 	"fmt"
+	"image/color"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -109,54 +110,54 @@ func WithDefaultColors(orig ColorPalette) ColorPalette {
 	return cp
 }
 
-func (cp ColorPalette) PrimaryColor() lipgloss.Color {
+func (cp ColorPalette) PrimaryColor() color.Color {
 	return lipgloss.Color(cp.Primary)
 }
 
-func (cp ColorPalette) SecondaryColor() lipgloss.Color {
+func (cp ColorPalette) SecondaryColor() color.Color {
 	return lipgloss.Color(cp.Secondary)
 }
 
-func (cp ColorPalette) TertiaryColor() lipgloss.Color {
+func (cp ColorPalette) TertiaryColor() color.Color {
 	return lipgloss.Color(cp.Tertiary)
 }
 
-func (cp ColorPalette) SuccessColor() lipgloss.Color {
+func (cp ColorPalette) SuccessColor() color.Color {
 	return lipgloss.Color(cp.Success)
 }
 
-func (cp ColorPalette) WarningColor() lipgloss.Color {
+func (cp ColorPalette) WarningColor() color.Color {
 	return lipgloss.Color(cp.Warning)
 }
 
-func (cp ColorPalette) ErrorColor() lipgloss.Color {
+func (cp ColorPalette) ErrorColor() color.Color {
 	return lipgloss.Color(cp.Error)
 }
 
-func (cp ColorPalette) InfoColor() lipgloss.Color {
+func (cp ColorPalette) InfoColor() color.Color {
 	return lipgloss.Color(cp.Info)
 }
 
-func (cp ColorPalette) BodyColor() lipgloss.Color {
+func (cp ColorPalette) BodyColor() color.Color {
 	return lipgloss.Color(cp.Body)
 }
 
-func (cp ColorPalette) EmphasisColor() lipgloss.Color {
+func (cp ColorPalette) EmphasisColor() color.Color {
 	return lipgloss.Color(cp.Emphasis)
 }
 
-func (cp ColorPalette) BorderColor() lipgloss.Color {
+func (cp ColorPalette) BorderColor() color.Color {
 	return lipgloss.Color(cp.Border)
 }
 
-func (cp ColorPalette) BlackColor() lipgloss.Color {
+func (cp ColorPalette) BlackColor() color.Color {
 	return lipgloss.Color(cp.Black)
 }
 
-func (cp ColorPalette) WhiteColor() lipgloss.Color {
+func (cp ColorPalette) WhiteColor() color.Color {
 	return lipgloss.Color(cp.White)
 }
 
-func (cp ColorPalette) GrayColor() lipgloss.Color {
+func (cp ColorPalette) GrayColor() color.Color {
 	return lipgloss.Color(cp.Gray)
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea/v2"
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -37,8 +37,8 @@ func (v *ErrorView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, nil
 }
 
-func (v *ErrorView) View() string {
-	return v.theme.RenderError(errorString(v.err))
+func (v *ErrorView) View() tea.View {
+	return tea.View{Content: v.theme.RenderError(errorString(v.err))}
 }
 
 func (v *ErrorView) HelpMsg() string {

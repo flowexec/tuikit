@@ -3,8 +3,8 @@ package views
 import (
 	"fmt"
 
-	"github.com/charmbracelet/bubbles/v2/spinner"
-	tea "github.com/charmbracelet/bubbletea/v2"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/flowexec/tuikit/themes"
 )
@@ -36,14 +36,14 @@ func (v *LoadingView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, cmd
 }
 
-func (v *LoadingView) View() string {
+func (v *LoadingView) View() tea.View {
 	var txt string
 	if v.msg == "" {
 		txt = fmt.Sprintf("\n\n %s %s\n\n", v.spinner.View(), v.theme.RenderInfo(DefaultLoading))
 	} else {
 		txt = fmt.Sprintf("\n\n %s %s\n\n", v.spinner.View(), v.theme.RenderInfo(v.msg))
 	}
-	return txt
+	return tea.View{Content: txt}
 }
 
 func (v *LoadingView) HelpMsg() string {

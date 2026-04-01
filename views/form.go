@@ -12,14 +12,12 @@ import (
 	"strings"
 	"sync"
 
-	tea "github.com/charmbracelet/bubbletea"
-	teaV2 "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"golang.org/x/term"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
-	"github.com/flowexec/tuikit/utils"
 )
 
 type FormFieldType uint
@@ -195,7 +193,7 @@ func NewFormView(
 		WithWidth(state.ContentWidth).
 		WithHeight(state.ContentHeight).
 		WithShowHelp(true)
-	hf.SubmitCmd = utils.V2CmdToCmd(types.Submit)
+	hf.SubmitCmd = types.Submit
 	hf.CancelCmd = tea.Quit
 	if len(fields) > 5 {
 		hf = hf.WithLayout(huh.LayoutColumns(2)) // TODO: make this configurable or auto-dynamic
@@ -231,11 +229,11 @@ func (f *Form) Completed() bool {
 	return f.completed
 }
 
-func (f *Form) Init() teaV2.Cmd {
-	return utils.CmdToV2Cmd(f.form.Init())
+func (f *Form) Init() tea.Cmd {
+	return f.form.Init()
 }
 
-func (f *Form) Update(msg teaV2.Msg) (teaV2.Model, teaV2.Cmd) {
+func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if f.err != nil {
 		return f.err.Update(msg)
 	}
@@ -253,17 +251,17 @@ func (f *Form) Update(msg teaV2.Msg) (teaV2.Model, teaV2.Cmd) {
 		return f, types.ReplaceView
 	}
 
-	model, cmd := f.form.Update(utils.V2MsgToMsg(msg))
+	model, cmd := f.form.Update(msg)
 	var ok bool
 	f.form, ok = model.(*huh.Form)
 	if !ok {
 		f.err = NewErrorView(fmt.Errorf("unable to cast form model to huh.Form"), f.theme)
-		return f, utils.CmdToV2Cmd(cmd)
+		return f, cmd
 	}
-	return f, utils.CmdToV2Cmd(cmd)
+	return f, cmd
 }
 
-func (f *Form) View() string {
+func (f *Form) View() tea.View {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
@@ -271,7 +269,7 @@ func (f *Form) View() string {
 		return f.err.View()
 	}
 
-	return f.form.View()
+	return tea.View{Content: f.form.View()}
 }
 
 func (f *Form) HelpMsg() string {

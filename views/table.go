@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/flowexec/tuikit/types"
 )
@@ -78,13 +78,13 @@ func (t *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case *types.RenderState:
 		t.render = msg
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		return t, t.handleKeyMsg(msg)
 	}
 	return t, nil
 }
 
-func (t *Table) handleKeyMsg(msg tea.KeyMsg) tea.Cmd {
+func (t *Table) handleKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case "up", "k":
 		t.moveCursor(-1)
@@ -92,7 +92,7 @@ func (t *Table) handleKeyMsg(msg tea.KeyMsg) tea.Cmd {
 		t.moveCursor(1)
 	case "enter":
 		return t.selectRow()
-	case " ", "tab":
+	case "space", "tab":
 		t.toggleExpansion()
 		t.buildVisibleRows()
 		t.ensureSelectedVisible()
@@ -125,9 +125,9 @@ func (t *Table) selectRow() tea.Cmd {
 	}
 }
 
-func (t *Table) View() string {
+func (t *Table) View() tea.View {
 	if t.render == nil || len(t.visibleRows) == 0 {
-		return "No data"
+		return tea.View{Content: "No data"}
 	}
 
 	tableWidth := t.calculateTableWidth()
@@ -179,7 +179,7 @@ func (t *Table) View() string {
 		Width(t.render.ContentWidth).
 		Height(t.render.ContentHeight).
 		Render(result)
-	return rendered
+	return tea.View{Content: rendered}
 }
 
 func (t *Table) HelpMsg() string {

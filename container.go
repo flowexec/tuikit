@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -19,7 +19,6 @@ import (
 
 type View interface {
 	tea.Model
-	tea.ViewModel
 
 	ShowFooter() bool
 	HelpMsg() string
@@ -140,7 +139,6 @@ func (c *Container) Init() tea.Cmd {
 	cmd := c.CurrentView().Init()
 	cmds = append(
 		cmds,
-		tea.SetWindowTitle(c.app.Name),
 		c.doTick(),
 		cmd,
 	)
@@ -184,7 +182,7 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			c.HandleError(err)
 		}
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if c.CurrentView().Type() == views.FormViewType {
 			fwdMsg = nil
 			_, cmd := c.CurrentView().Update(msg)
@@ -228,12 +226,12 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return c, tea.Batch(cmds...)
 }
 
-func (c *Container) View() string {
+func (c *Container) View() tea.View {
 	var footer string
 	var footerPrefix string
 
 	if !c.Ready() && c.CurrentView().Type() != views.LoadingViewType {
-		return ""
+		return tea.NewView("")
 	}
 	switch {
 	case c.CurrentView().Type() == views.FrameViewType:
@@ -267,7 +265,9 @@ func (c *Container) View() string {
 	}
 
 	header := c.render.Theme.RenderHeader(c.app.Name, c.app.stateKey, c.app.stateVal, c.render.Width)
-	return lipgloss.JoinVertical(lipgloss.Top, header, c.CurrentView().View(), footer)
+	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Top, header, c.CurrentView().View().Content, footer))
+	v.WindowTitle = c.app.Name
+	return v
 }
 
 func (c *Container) Ready() bool {

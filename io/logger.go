@@ -5,7 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/muesli/termenv"
 
 	"github.com/flowexec/tuikit/themes"
@@ -140,7 +141,7 @@ func applyHumanReadableFormat(handler *log.Logger, style themes.Theme, mode LogM
 
 	handler.SetFormatter(log.TextFormatter)
 	handler.SetTimeFormat(time.Kitchen)
-	handler.SetColorProfile(termenv.ColorProfile())
+	handler.SetColorProfile(colorprofile.Profile(termenv.ColorProfile()))
 	handler.SetStyles(style.LoggerStyles())
 }
 
@@ -279,7 +280,7 @@ func (l *StandardLogger) Warnf(msg string, args ...any) {
 }
 
 func (l *StandardLogger) FatalErr(err error) {
-	l.Fatalf(err.Error())
+	l.Fatalf("%s", err.Error())
 }
 
 func (l *StandardLogger) Fatalf(msg string, args ...any) {

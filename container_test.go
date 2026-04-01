@@ -515,6 +515,200 @@ func TestRenderToast(t *testing.T) {
 	}
 }
 
+// --- Library view tests ---
+
+func testLibrary() *views.Library {
+	state := testRenderState()
+	page0 := views.LibraryPage{
+		Title: "Categories",
+		Factory: func(render *types.RenderState, _ []views.PageSelection) (tea.Model, []types.KeyCallback) {
+			cols := []views.TableColumn{{Title: "Name", Percentage: 50}, {Title: "Count", Percentage: 50}}
+			rows := []views.TableRow{
+				{Data: []string{"Alpha", "3"}},
+				{Data: []string{"Beta", "5"}},
+			}
+			return views.NewTable(render, cols, rows, views.TableDisplayFull), nil
+		},
+	}
+	page1 := views.LibraryPage{
+		Title: "Items",
+		Factory: func(render *types.RenderState, selections []views.PageSelection) (tea.Model, []types.KeyCallback) {
+			cat := selections[0].Data[0]
+			cols := []views.TableColumn{{Title: "Item", Percentage: 100}}
+			rows := []views.TableRow{
+				{Data: []string{cat + "-item-1"}},
+				{Data: []string{cat + "-item-2"}},
+			}
+			keys := []types.KeyCallback{
+				{Key: "x", Label: "action", Callback: func() error { return nil }},
+			}
+			return views.NewTable(render, cols, rows, views.TableDisplayFull), keys
+		},
+	}
+	page2 := views.LibraryPage{
+		Title: "Details",
+		Factory: func(render *types.RenderState, selections []views.PageSelection) (tea.Model, []types.KeyCallback) {
+			item := selections[1].Data[0]
+			return views.NewDetailView(render, "Detail for "+item), nil
+		},
+	}
+	return views.NewLibrary(state, page0, page1, page2)
+}
+
+func TestLibraryViewType(t *testing.T) {
+	lib := testLibrary()
+	if lib.Type() != views.LibraryViewType {
+		t.Errorf("expected type %q, got %q", views.LibraryViewType, lib.Type())
+	}
+}
+
+func TestLibraryInitialRender(t *testing.T) {
+	lib := testLibrary()
+	content := lib.View().Content
+	// Breadcrumb should show the first page title
+	if !strings.Contains(content, "Categories") {
+		t.Error("expected breadcrumb with 'Categories'")
+	}
+	// Table content from page 0
+	if !strings.Contains(content, "Alpha") {
+		t.Error("expected page 0 table row 'Alpha'")
+	}
+	if !strings.Contains(content, "Beta") {
+		t.Error("expected page 0 table row 'Beta'")
+	}
+}
+
+func TestLibraryNavigateForward(t *testing.T) {
+	lib := testLibrary()
+
+	// Navigate forward from page 0 -> page 1
+	lib.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	content := lib.View().Content
+
+	// Breadcrumb should show both pages
+	if !strings.Contains(content, "Categories") {
+		t.Error("expected breadcrumb with 'Categories'")
+	}
+	if !strings.Contains(content, "Items") {
+		t.Error("expected breadcrumb with 'Items'")
+	}
+	// Page 1 content derived from page 0 selection ("Alpha")
+	if !strings.Contains(content, "Alpha-item-1") {
+		t.Error("expected page 1 row 'Alpha-item-1'")
+	}
+}
+
+func TestLibraryNavigateBackward(t *testing.T) {
+	lib := testLibrary()
+
+	// Go to page 1
+	lib.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	// Go back to page 0
+	lib.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+
+	content := lib.View().Content
+	if !strings.Contains(content, "Alpha") {
+		t.Error("expected page 0 content after navigating back")
+	}
+	if strings.Contains(content, "Alpha-item-1") {
+		t.Error("should not show page 1 content after navigating back")
+	}
+}
+
+func TestLibraryCapturingInput(t *testing.T) {
+	lib := testLibrary()
+	ic, ok := any(lib).(tuikit.InputCapturer)
+	if !ok {
+		t.Fatal("Library should implement InputCapturer")
+	}
+
+	// On page 0, not capturing
+	if ic.CapturingInput() {
+		t.Error("should not be capturing input on page 0")
+	}
+
+	// Navigate to page 1
+	lib.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if !ic.CapturingInput() {
+		t.Error("should be capturing input on page > 0")
+	}
+
+	// Navigate back to page 0
+	lib.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if ic.CapturingInput() {
+		t.Error("should not be capturing input after returning to page 0")
+	}
+}
+
+func TestLibraryHelpBindings(t *testing.T) {
+	lib := testLibrary()
+
+	// Page 0: should have drill-down key but not go-back
+	keys := helpKeys(lib)
+	if !keys["enter/→"] {
+		t.Error("expected 'enter/→' help binding on page 0")
+	}
+	if keys["esc/<-"] {
+		t.Error("should not have 'esc/<-' on page 0")
+	}
+
+	// Navigate to page 1 (middle page): should have both
+	lib.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	keys = helpKeys(lib)
+	if !keys["enter/→"] {
+		t.Error("expected 'enter/→' on middle page")
+	}
+	if !keys["esc/←"] {
+		t.Error("expected 'esc/←' on middle page")
+	}
+	// Domain callback key from page 1
+	if !keys["x"] {
+		t.Error("expected domain key 'x' on page 1")
+	}
+}
+
+func TestLibraryLastPageForwardsEnter(t *testing.T) {
+	lib := testLibrary()
+
+	// Navigate to page 1, then page 2 (last page)
+	lib.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	lib.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+
+	content := lib.View().Content
+	if !strings.Contains(content, "Detail for Alpha-item-1") {
+		t.Errorf("expected detail page content, got %q", content)
+	}
+
+	// Help should not have drill-down on last page
+	keys := helpKeys(lib)
+	if keys["enter/→"] {
+		t.Error("should not have 'enter/→' on last page")
+	}
+	if !keys["esc/←"] {
+		t.Error("expected 'esc/←' on last page")
+	}
+}
+
+func TestLibrarySubviewFilterCapture(t *testing.T) {
+	lib := testLibrary()
+	ic, ok := any(lib).(tuikit.InputCapturer)
+	if !ok {
+		t.Fatal("Library should implement InputCapturer")
+	}
+
+	// Activate table filter on page 0
+	lib.Update(tea.KeyPressMsg{Text: "/"})
+	if !ic.CapturingInput() {
+		t.Error("should be capturing input when sub-view filter is active")
+	}
+
+	// Esc should close filter, not propagate
+	lib.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if ic.CapturingInput() {
+		t.Error("should stop capturing after filter closed")
+	}
+}
+
 // --- Integration test ---
 // The form test needs the full bubbletea lifecycle to verify
 // interactive input handling and view transitions.

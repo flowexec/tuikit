@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/flowexec/tuikit"
 	sampleTypes "github.com/flowexec/tuikit/sample/types"
 	"github.com/flowexec/tuikit/themes"
@@ -76,6 +78,8 @@ func buildView(viewType string, container *tuikit.Container) tuikit.View {
 		view = buildTableMiniMultiView(container)
 	case "form":
 		view = buildFormView(container)
+	case "library":
+		view = buildLibraryView(container)
 	}
 	return view
 }
@@ -222,6 +226,150 @@ func buildTableMiniMultiView(container *tuikit.Container) tuikit.View {
 		return nil
 	})
 	return table
+}
+
+func buildLibraryView(container *tuikit.Container) tuikit.View {
+	return views.NewLibrary(
+		container.RenderState(),
+		libraryWorkspacePage(container),
+		libraryExecPage(container),
+		libraryEntityPage(container),
+	)
+}
+
+func libraryWorkspacePage(container *tuikit.Container) views.LibraryPage {
+	return views.LibraryPage{
+		Title: "Workspaces",
+		Factory: func(render *types.RenderState, _ []views.PageSelection) (tea.Model, []types.KeyCallback) {
+			columns := []views.TableColumn{
+				{Title: "Workspace", Percentage: 40},
+				{Title: "Description", Percentage: 35},
+				{Title: "Status", Percentage: 25},
+			}
+			rows := []views.TableRow{
+				{
+					Data: []string{"flow-workspace", "Main development workspace", "Active"},
+					Children: []views.TableRow{
+						{Data: []string{"docs", "Documentation namespace", "5 executables"}},
+						{Data: []string{"api", "API services", "12 executables"}},
+						{Data: []string{"frontend", "Web UI components", "8 executables"}},
+					},
+				},
+				{
+					Data: []string{"home-lab", "Infrastructure automation", "Active"},
+					Children: []views.TableRow{
+						{Data: []string{"k8s", "Kubernetes configs", "15 executables"}},
+						{Data: []string{"monitoring", "Observability stack", "6 executables"}},
+					},
+				},
+				{
+					Data:     []string{"personal-tools", "Personal utility scripts", "Active"},
+					Children: []views.TableRow{},
+				},
+			}
+			table := views.NewTable(render, columns, rows, views.TableDisplayFull)
+			keys := []types.KeyCallback{
+				{Key: "o", Label: "open", Callback: func() error {
+					container.SetNotice("Opening workspace folder...", themes.OutputLevelInfo)
+					return nil
+				}},
+				{Key: "s", Label: "set context", Callback: func() error {
+					container.SetNotice("Context updated", themes.OutputLevelSuccess)
+					return nil
+				}},
+			}
+			return table, keys
+		},
+	}
+}
+
+func libraryExecPage(container *tuikit.Container) views.LibraryPage {
+	return views.LibraryPage{
+		Title: "Executables",
+		Factory: func(render *types.RenderState, selections []views.PageSelection) (tea.Model, []types.KeyCallback) {
+			ws := selections[0].Data[0]
+			columns := []views.TableColumn{
+				{Title: "Executable", Percentage: 40},
+				{Title: "Verb", Percentage: 20},
+				{Title: "Tags", Percentage: 40},
+			}
+			execsByWs := map[string][]views.TableRow{
+				"flow-workspace": {
+					{Data: []string{"build-app", "exec", "go, build"}},
+					{Data: []string{"test-unit", "exec", "go, test"}},
+					{Data: []string{"test-integration", "exec", "go, test, integration"}},
+					{Data: []string{"deploy-staging", "exec", "deploy, staging"}},
+					{Data: []string{"deploy-prod", "exec", "deploy, production"}},
+					{Data: []string{"lint-check", "exec", "go, lint"}},
+					{Data: []string{"gen-docs", "exec", "docs, generate"}},
+				},
+				"home-lab": {
+					{Data: []string{"apply-k8s", "exec", "kubernetes, apply"}},
+					{Data: []string{"sync-configs", "exec", "kubernetes, sync"}},
+					{Data: []string{"restart-pods", "exec", "kubernetes, restart"}},
+					{Data: []string{"check-alerts", "exec", "monitoring, alerts"}},
+				},
+				"personal-tools": {
+					{Data: []string{"backup-dotfiles", "exec", "backup, dotfiles"}},
+					{Data: []string{"update-deps", "exec", "maintenance"}},
+				},
+			}
+			rows := execsByWs[ws]
+			if rows == nil {
+				rows = []views.TableRow{}
+			}
+			table := views.NewTable(render, columns, rows, views.TableDisplayFull)
+			keys := []types.KeyCallback{
+				{Key: "r", Label: "run", Callback: func() error {
+					sel := table.GetSelectedRow()
+					if sel != nil {
+						container.SetNotice(
+							fmt.Sprintf("Running: %s/%s", ws, sel.Data()[0]),
+							themes.OutputLevelInfo,
+						)
+					}
+					return nil
+				}},
+				{Key: "c", Label: "copy ref", Callback: func() error {
+					sel := table.GetSelectedRow()
+					if sel != nil {
+						container.SetNotice(
+							fmt.Sprintf("Copied: %s/%s", ws, sel.Data()[0]),
+							themes.OutputLevelSuccess,
+						)
+					}
+					return nil
+				}},
+			}
+			return table, keys
+		},
+	}
+}
+
+func libraryEntityPage(container *tuikit.Container) views.LibraryPage {
+	return views.LibraryPage{
+		Title: "Details",
+		Factory: func(render *types.RenderState, selections []views.PageSelection) (tea.Model, []types.KeyCallback) {
+			ws := selections[0].Data[0]
+			exec := selections[1].Data[0]
+			entity := &sampleTypes.Thing{Name: exec, Type: fmt.Sprintf("executable in %s", ws)}
+			entityView := views.NewEntityView(render, entity, types.EntityFormatDocument)
+			keys := []types.KeyCallback{
+				{Key: "r", Label: "run", Callback: func() error {
+					container.SetNotice(
+						fmt.Sprintf("Running: %s/%s", ws, exec),
+						themes.OutputLevelInfo,
+					)
+					return nil
+				}},
+				{Key: "e", Label: "edit", Callback: func() error {
+					container.SetNotice("Opening in editor...", themes.OutputLevelInfo)
+					return nil
+				}},
+			}
+			return entityView, keys
+		},
+	}
 }
 
 func buildFormView(container *tuikit.Container) tuikit.View {

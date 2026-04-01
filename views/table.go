@@ -550,6 +550,17 @@ func (t *Table) matchesFilter(query string, data []string) bool {
 	return false
 }
 
+func (t *Table) SelectedIndex() int {
+	return t.selectedIndex
+}
+
+func (t *Table) SelectedData() []string {
+	if row := t.GetSelectedRow(); row != nil {
+		return row.Data()
+	}
+	return nil
+}
+
 func (t *Table) toggleExpansion() {
 	if t.selectedIndex < 0 || t.selectedIndex >= len(t.visibleRows) {
 		return

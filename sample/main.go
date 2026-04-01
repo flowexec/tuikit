@@ -19,7 +19,7 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	app := &tuikit.Application{Name: "tuikit-sample"}
+	app := &tuikit.Application{Name: "tuikit-sample", Version: "v1"}
 
 	container, err := tuikit.NewContainer(ctx, app)
 	if err != nil {

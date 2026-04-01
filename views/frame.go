@@ -2,6 +2,8 @@ package views
 
 import (
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/flowexec/tuikit/themes"
 )
 
 const FrameViewType = "frame"
@@ -26,12 +28,8 @@ func (v *FrameView) View() tea.View {
 	return v.model.View()
 }
 
-func (v *FrameView) HelpMsg() string {
-	return ""
-}
-
-func (v *FrameView) ShowFooter() bool {
-	return false
+func (v *FrameView) HelpBindings() []themes.HelpKey {
+	return nil
 }
 
 func (v *FrameView) Type() string {

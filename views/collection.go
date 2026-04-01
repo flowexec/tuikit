@@ -91,6 +91,10 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		v.height = msg.ContentHeight
 		v.model.SetSize(v.width, v.height)
 	case tea.KeyPressMsg:
+		// When the filter input is active, pass all keys through to the list.
+		if v.model.FilterState() == list.Filtering {
+			break
+		}
 		switch msg.String() {
 		case "-", "l":
 			if v.format == types.CollectionFormatList {
@@ -217,32 +221,30 @@ func (v *CollectionView) View() tea.View {
 	return v.renderedView()
 }
 
-func (v *CollectionView) HelpMsg() string {
-	var selectHelp string
-	if v.selectedFunc != nil {
-		selectHelp = "[ enter: select ] "
+func (v *CollectionView) HelpBindings() []themes.HelpKey {
+	if v.err != nil {
+		return nil
 	}
-	msg := fmt.Sprintf("%s[ /: filter ] [ d: docs ] [ y: yaml ] [ j: json ]", selectHelp)
-
-	var extendedHelp string
-	for i, cb := range v.callbacks {
-		switch {
-		case cb.Key == "" || cb.Label == "":
-			continue
-		case i == 0:
-			extendedHelp += fmt.Sprintf("[ %s: %s ]", cb.Key, cb.Label)
-		default:
-			extendedHelp += fmt.Sprintf(" [ %s: %s ]", cb.Key, cb.Label)
+	keys := make([]themes.HelpKey, 0)
+	for _, cb := range v.callbacks {
+		if cb.Key != "" && cb.Label != "" {
+			keys = append(keys, themes.HelpKey{Key: cb.Key, Desc: cb.Label})
 		}
 	}
-	if extendedHelp != "" {
-		msg = fmt.Sprintf("%s ● %s", extendedHelp, msg)
+	if v.selectedFunc != nil {
+		keys = append(keys, themes.HelpKey{Key: "enter", Desc: "select"})
 	}
-	return msg
+	keys = append(keys,
+		themes.HelpKey{Key: "/", Desc: "filter"},
+		themes.HelpKey{Key: "l", Desc: "list"},
+		themes.HelpKey{Key: "y", Desc: "yaml"},
+		themes.HelpKey{Key: "j", Desc: "json"},
+	)
+	return keys
 }
 
-func (v *CollectionView) ShowFooter() bool {
-	return v.err == nil
+func (v *CollectionView) CapturingInput() bool {
+	return v.model.FilterState() == list.Filtering
 }
 
 func (v *CollectionView) Type() string {

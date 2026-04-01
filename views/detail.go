@@ -92,15 +92,18 @@ func (v *DetailView) View() tea.View {
 	}
 	sections = append(sections, v.renderBodyBox())
 
-	return tea.View{Content: lipgloss.JoinVertical(lipgloss.Left, sections...)}
+	content := lipgloss.NewStyle().MarginLeft(2).Render(
+		lipgloss.JoinVertical(lipgloss.Left, sections...),
+	)
+	return tea.View{Content: content}
 }
 
-func (v *DetailView) HelpMsg() string {
-	return "↑/↓: scroll • u/d: half-page • g/G: top/bottom"
-}
-
-func (v *DetailView) ShowFooter() bool {
-	return true
+func (v *DetailView) HelpBindings() []themes.HelpKey {
+	return []themes.HelpKey{
+		{Key: "j/k", Desc: "scroll"},
+		{Key: "u/d", Desc: "half-page"},
+		{Key: "g/G", Desc: "top/bottom"},
+	}
 }
 
 func (v *DetailView) Type() string {
@@ -123,15 +126,15 @@ func (v *DetailView) syncViewport() {
 	vpHeight := max(v.height-v.metadataHeight-bodyChrome, 1)
 
 	v.viewport.SetHeight(vpHeight)
-	v.viewport.SetWidth(v.width - 8) // account for border + padding
+	v.viewport.SetWidth(v.width - 10) // account for margin (2) + border (2) + padding (4) + buffer (2)
 }
 
 func (v *DetailView) calcMetadataHeight() int {
 	if len(v.metadata) == 0 {
 		return 0
 	}
-	// rows + border top/bottom (2) + margin bottom (1)
-	return len(v.metadata) + 2 + 1
+	// rows + border top/bottom (2) + padding top/bottom (2) + margin bottom (1)
+	return len(v.metadata) + 2 + 2 + 1
 }
 
 func (v *DetailView) renderMetadata() string {
@@ -165,11 +168,11 @@ func (v *DetailView) renderMetadata() string {
 		rows = append(rows, row)
 	}
 
-	tableWidth := min(v.width-4, 60)
+	tableWidth := min(v.width-6, 60)
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(cp.BorderColor()).
-		Padding(0, 1).
+		Padding(1, 1).
 		Width(tableWidth).
 		MarginBottom(1).
 		Render(strings.Join(rows, "\n"))

@@ -87,6 +87,10 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return v, tea.Quit
 		}
 	case tea.KeyPressMsg:
+		// When the filter input is active, pass all keys through to the list.
+		if v.model.FilterState() == list.Filtering {
+			break
+		}
 		switch msg.String() {
 		case "x":
 			if v.activeEntry != nil {
@@ -175,12 +179,20 @@ func (v *LogArchiveView) View() tea.View {
 	return tea.View{Content: content}
 }
 
-func (v *LogArchiveView) HelpMsg() string {
-	return "[ enter: select ] [ /: filter ] ● [ d: delete selected ] [ x: delete all ]"
+func (v *LogArchiveView) HelpBindings() []themes.HelpKey {
+	if v.err != nil || v.activeEntry != nil {
+		return nil
+	}
+	return []themes.HelpKey{
+		{Key: "enter", Desc: "select"},
+		{Key: "/", Desc: "filter"},
+		{Key: "d", Desc: "delete selected"},
+		{Key: "x", Desc: "delete all"},
+	}
 }
 
-func (v *LogArchiveView) ShowFooter() bool {
-	return v.err == nil && v.activeEntry == nil
+func (v *LogArchiveView) CapturingInput() bool {
+	return v.model.FilterState() == list.Filtering
 }
 
 func (v *LogArchiveView) Type() string {

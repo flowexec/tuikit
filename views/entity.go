@@ -166,28 +166,23 @@ func (v *EntityView) View() tea.View {
 	return tea.View{Content: v.viewport.View()}
 }
 
-func (v *EntityView) HelpMsg() string {
-	msg := "[ d: docs ] [ y: yaml ] [ j: json ]"
-
-	var extendedHelp string
-	for i, cb := range v.callbacks {
-		switch {
-		case cb.Key == "" || cb.Label == "":
-			continue
-		case i == 0:
-			extendedHelp += fmt.Sprintf("[ %s: %s ]", cb.Key, cb.Label)
-		default:
-			extendedHelp += fmt.Sprintf(" [ %s: %s ]", cb.Key, cb.Label)
+func (v *EntityView) HelpBindings() []themes.HelpKey {
+	if v.err != nil {
+		return nil
+	}
+	keys := make([]themes.HelpKey, 0)
+	for _, cb := range v.callbacks {
+		if cb.Key != "" && cb.Label != "" {
+			keys = append(keys, themes.HelpKey{Key: cb.Key, Desc: cb.Label})
 		}
 	}
-	if extendedHelp != "" {
-		msg = fmt.Sprintf("%s ● %s", extendedHelp, msg)
-	}
-	return msg
-}
-
-func (v *EntityView) ShowFooter() bool {
-	return v.err == nil
+	keys = append(keys,
+		themes.HelpKey{Key: "↑/↓", Desc: "scroll"},
+		themes.HelpKey{Key: "d", Desc: "document"},
+		themes.HelpKey{Key: "y", Desc: "yaml"},
+		themes.HelpKey{Key: "j", Desc: "json"},
+	)
+	return keys
 }
 
 func (v *EntityView) Type() string {

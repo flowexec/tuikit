@@ -23,6 +23,7 @@ type ColorPalette struct {
 	Body      string `json:"body"      yaml:"body"`
 	Emphasis  string `json:"emphasis"  yaml:"emphasis"`
 	Border    string `json:"border"    yaml:"border"`
+	AppName   string `json:"appName"   yaml:"appName"`
 
 	Black string `json:"black" yaml:"black"`
 	White string `json:"white" yaml:"white"`
@@ -62,7 +63,6 @@ func ReadColorPalette(file string) (*ColorPalette, error) {
 	return cp, nil
 }
 
-//nolint:goconst
 func WithDefaultColors(orig ColorPalette) ColorPalette {
 	cp := orig
 	if cp.Primary == "" {
@@ -72,13 +72,13 @@ func WithDefaultColors(orig ColorPalette) ColorPalette {
 		cp.Secondary = "#83C092"
 	}
 	if cp.Tertiary == "" {
-		cp.Tertiary = "#D699B6"
+		cp.Tertiary = "#DBBC7F"
 	}
 	if cp.Success == "" {
 		cp.Success = "#8DA101"
 	}
 	if cp.Warning == "" {
-		cp.Warning = "#5C6A72"
+		cp.Warning = "#DFA000"
 	}
 	if cp.Error == "" {
 		cp.Error = "#F85552"
@@ -95,6 +95,9 @@ func WithDefaultColors(orig ColorPalette) ColorPalette {
 	if cp.Border == "" {
 		cp.Border = "#5C6A72"
 	}
+	if cp.AppName == "" {
+		cp.AppName = "#D699B6"
+	}
 	if cp.Black == "" {
 		cp.Black = "#343F44"
 	}
@@ -102,7 +105,7 @@ func WithDefaultColors(orig ColorPalette) ColorPalette {
 		cp.White = "#DFDDC8"
 	}
 	if cp.Gray == "" {
-		cp.Gray = "#5C6A72"
+		cp.Gray = "#859289"
 	}
 	if cp.ChromaCodeStyle == "" {
 		cp.ChromaCodeStyle = "friendly"
@@ -160,4 +163,8 @@ func (cp ColorPalette) WhiteColor() color.Color {
 
 func (cp ColorPalette) GrayColor() color.Color {
 	return lipgloss.Color(cp.Gray)
+}
+
+func (cp ColorPalette) AppNameColor() color.Color {
+	return lipgloss.Color(cp.AppName)
 }

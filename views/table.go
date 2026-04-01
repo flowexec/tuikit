@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
 )
 
@@ -43,7 +45,16 @@ type Table struct {
 	OnSelect func(index int) error
 	OnHover  func(index int)
 
-	showBorder bool
+	// FilterFunc is an optional custom filter. When set, it receives the
+	// query string and a row's data and returns true if the row matches.
+	// When nil, a default case-insensitive substring match on all cells is used.
+	FilterFunc func(query string, row []string) bool
+
+	showBorder      bool
+	filtering       bool
+	filterInput     textinput.Model
+	filterQuery     string
+	prevFilterQuery string
 }
 
 type VisibleRow struct {
@@ -59,12 +70,17 @@ func (vr *VisibleRow) Data() []string {
 }
 
 func NewTable(render *types.RenderState, columns []TableColumn, rows []TableRow, mode TableDisplayMode) *Table {
+	fi := textinput.New()
+	fi.Prompt = "Filter: "
+	fi.Placeholder = "filter..."
+	fi.CharLimit = 64
 	t := &Table{
 		render:      render,
 		columns:     columns,
 		rows:        rows,
 		displayMode: mode,
 		showBorder:  mode == TableDisplayMini,
+		filterInput: fi,
 	}
 	t.buildVisibleRows()
 	return t
@@ -79,6 +95,9 @@ func (t *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case *types.RenderState:
 		t.render = msg
 	case tea.KeyPressMsg:
+		if t.filtering {
+			return t, t.handleFilterKeyMsg(msg)
+		}
 		return t, t.handleKeyMsg(msg)
 	}
 	return t, nil
@@ -96,8 +115,49 @@ func (t *Table) handleKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
 		t.toggleExpansion()
 		t.buildVisibleRows()
 		t.ensureSelectedVisible()
+	case "/":
+		t.prevFilterQuery = t.filterQuery
+		t.filtering = true
+		t.filterInput.Focus()
+		t.filterInput.SetValue(t.filterQuery)
 	}
 	return nil
+}
+
+func (t *Table) handleFilterKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
+	switch msg.String() {
+	case "esc":
+		// Cancel: restore query from before filter was opened.
+		t.filterQuery = t.prevFilterQuery
+		t.filtering = false
+		t.filterInput.Blur()
+		t.buildVisibleRows()
+		t.selectedIndex = 0
+		t.scrollOffset = 0
+		return nil
+	case types.KeyEnter:
+		// Accept the current filter.
+		t.filterQuery = t.filterInput.Value()
+		t.filtering = false
+		t.filterInput.Blur()
+		t.buildVisibleRows()
+		t.selectedIndex = 0
+		t.scrollOffset = 0
+		return nil
+	}
+	// Forward to textinput.
+	var cmd tea.Cmd
+	t.filterInput, cmd = t.filterInput.Update(msg)
+	// Live-filter as the user types.
+	t.filterQuery = t.filterInput.Value()
+	t.buildVisibleRows()
+	t.selectedIndex = 0
+	t.scrollOffset = 0
+	return cmd
+}
+
+func (t *Table) CapturingInput() bool {
+	return t.filtering
 }
 
 func (t *Table) moveCursor(delta int) {
@@ -126,7 +186,7 @@ func (t *Table) selectRow() tea.Cmd {
 }
 
 func (t *Table) View() tea.View {
-	if t.render == nil || len(t.visibleRows) == 0 {
+	if t.render == nil {
 		return tea.View{Content: "No data"}
 	}
 
@@ -135,37 +195,47 @@ func (t *Table) View() tea.View {
 
 	var content strings.Builder
 
-	header := t.renderHeader(colWidths)
-	content.WriteString(header)
-	content.WriteString("\n")
-
-	maxRows := t.maxVisibleRows()
-	start := t.scrollOffset
-	end := min(start+maxRows, len(t.visibleRows))
-
-	if start > 0 {
-		scrollHint := lipgloss.NewStyle().
-			Foreground(t.render.Theme.ColorPalette().GrayColor()).
-			Width(tableWidth).Align(lipgloss.Center).
-			Render(fmt.Sprintf("↑ %d more", start))
-		content.WriteString(scrollHint)
+	if len(t.visibleRows) == 0 {
+		cp := t.render.Theme.ColorPalette()
+		noMatch := lipgloss.NewStyle().
+			Foreground(cp.GrayColor()).
+			Width(tableWidth).
+			Align(lipgloss.Center).
+			Render("No matches")
+		content.WriteString(noMatch)
+	} else {
+		header := t.renderHeader(colWidths)
+		content.WriteString(header)
 		content.WriteString("\n")
-	}
 
-	for i := start; i < end; i++ {
-		rowStr := t.renderRow(t.visibleRows[i], colWidths, i == t.selectedIndex)
-		content.WriteString(rowStr)
-		content.WriteString("\n")
-	}
+		maxRows := t.maxVisibleRows()
+		start := t.scrollOffset
+		end := min(start+maxRows, len(t.visibleRows))
 
-	remaining := len(t.visibleRows) - end
-	if remaining > 0 {
-		scrollHint := lipgloss.NewStyle().
-			Foreground(t.render.Theme.ColorPalette().GrayColor()).
-			Width(tableWidth).Align(lipgloss.Center).
-			Render(fmt.Sprintf("↓ %d more", remaining))
-		content.WriteString(scrollHint)
-		content.WriteString("\n")
+		if start > 0 {
+			scrollHint := lipgloss.NewStyle().
+				Foreground(t.render.Theme.ColorPalette().GrayColor()).
+				Width(tableWidth).Align(lipgloss.Center).
+				Render(fmt.Sprintf("↑ %d more", start))
+			content.WriteString(scrollHint)
+			content.WriteString("\n")
+		}
+
+		for i := start; i < end; i++ {
+			rowStr := t.renderRow(t.visibleRows[i], colWidths, i == t.selectedIndex)
+			content.WriteString(rowStr)
+			content.WriteString("\n")
+		}
+
+		remaining := len(t.visibleRows) - end
+		if remaining > 0 {
+			scrollHint := lipgloss.NewStyle().
+				Foreground(t.render.Theme.ColorPalette().GrayColor()).
+				Width(tableWidth).Align(lipgloss.Center).
+				Render(fmt.Sprintf("↓ %d more", remaining))
+			content.WriteString(scrollHint)
+			content.WriteString("\n")
+		}
 	}
 
 	result := content.String()
@@ -174,20 +244,50 @@ func (t *Table) View() tea.View {
 		result = t.renderMiniTable(result, tableWidth)
 	}
 
+	// Render filter bar at the bottom when active or when a filter is set.
+	var filterBar string
+	if t.filtering {
+		filterBar = t.renderFilterBar(tableWidth)
+	} else if t.filterQuery != "" {
+		cp := t.render.Theme.ColorPalette()
+		filterBar = lipgloss.NewStyle().
+			Foreground(cp.GrayColor()).
+			Render(fmt.Sprintf("Filter: %s  (/ to edit, esc to clear)", t.filterQuery))
+	}
+
 	// Pad to fill available height so the table occupies the full content area.
+	tableHeight := t.render.ContentHeight
+	if filterBar != "" {
+		tableHeight-- // reserve 1 line for filter bar
+	}
 	rendered := lipgloss.NewStyle().
-		Width(t.render.ContentWidth).
-		Height(t.render.ContentHeight).
+		MarginLeft(2).
+		Width(t.render.ContentWidth - 2).
+		Height(tableHeight).
 		Render(result)
+
+	if filterBar != "" {
+		rendered = rendered + "\n" + lipgloss.NewStyle().MarginLeft(2).Render(filterBar)
+	}
+
 	return tea.View{Content: rendered}
 }
 
-func (t *Table) HelpMsg() string {
-	return "↑/↓: navigate • enter: select • space/tab: expand/collapse"
+func (t *Table) renderFilterBar(width int) string {
+	cp := t.render.Theme.ColorPalette()
+	return lipgloss.NewStyle().
+		Foreground(cp.SecondaryColor()).
+		Width(width).
+		Render(t.filterInput.View())
 }
 
-func (t *Table) ShowFooter() bool {
-	return true
+func (t *Table) HelpBindings() []themes.HelpKey {
+	return []themes.HelpKey{
+		{Key: "↑/↓/j/k", Desc: "navigate"},
+		{Key: "enter", Desc: "select"},
+		{Key: "space/tab", Desc: "expand/collapse"},
+		{Key: "/", Desc: "filter"},
+	}
 }
 
 func (t *Table) Type() string {
@@ -224,7 +324,7 @@ func (t *Table) calculateTableWidth() int {
 		}
 		return maxWidth
 	}
-	return t.render.ContentWidth
+	return t.render.ContentWidth - 2
 }
 
 func (t *Table) calculateColumnWidths(totalWidth int) []int {
@@ -353,6 +453,9 @@ func (t *Table) maxVisibleRows() int {
 	}
 	// Reserve lines for: header (2 lines: title + border), scroll hints (up to 2 lines)
 	available := t.render.ContentHeight - 2
+	if t.filtering || t.filterQuery != "" {
+		available-- // filter bar
+	}
 	if t.displayMode == TableDisplayMini {
 		// Mini mode border + padding takes extra space
 		available -= 4
@@ -380,26 +483,13 @@ func (t *Table) ensureSelectedVisible() {
 
 func (t *Table) buildVisibleRows() {
 	t.visibleRows = make([]VisibleRow, 0)
+	query := strings.TrimSpace(t.filterQuery)
 
 	for i, row := range t.rows {
-		t.visibleRows = append(t.visibleRows, VisibleRow{
-			data:      row.Data,
-			isChild:   false,
-			parentIdx: -1,
-			childIdx:  -1,
-			rowIdx:    i,
-		})
-
-		if row.Expanded {
-			for j, child := range row.Children {
-				t.visibleRows = append(t.visibleRows, VisibleRow{
-					data:      child.Data,
-					isChild:   true,
-					parentIdx: i,
-					childIdx:  j,
-					rowIdx:    -1,
-				})
-			}
+		if query == "" {
+			t.appendUnfilteredRow(i, row)
+		} else {
+			t.appendFilteredRow(i, row, query)
 		}
 	}
 
@@ -409,6 +499,55 @@ func (t *Table) buildVisibleRows() {
 	if t.selectedIndex < 0 {
 		t.selectedIndex = 0
 	}
+}
+
+func (t *Table) appendUnfilteredRow(i int, row TableRow) {
+	t.visibleRows = append(t.visibleRows, VisibleRow{
+		data: row.Data, parentIdx: -1, childIdx: -1, rowIdx: i,
+	})
+	if row.Expanded {
+		for j, child := range row.Children {
+			t.visibleRows = append(t.visibleRows, VisibleRow{
+				data: child.Data, isChild: true, parentIdx: i, childIdx: j, rowIdx: -1,
+			})
+		}
+	}
+}
+
+func (t *Table) appendFilteredRow(i int, row TableRow, query string) {
+	parentMatches := t.matchesFilter(query, row.Data)
+	var matchingChildren []int
+	for j, child := range row.Children {
+		if t.matchesFilter(query, child.Data) {
+			matchingChildren = append(matchingChildren, j)
+		}
+	}
+
+	if !parentMatches && len(matchingChildren) == 0 {
+		return
+	}
+
+	t.visibleRows = append(t.visibleRows, VisibleRow{
+		data: row.Data, parentIdx: -1, childIdx: -1, rowIdx: i,
+	})
+	for _, j := range matchingChildren {
+		t.visibleRows = append(t.visibleRows, VisibleRow{
+			data: row.Children[j].Data, isChild: true, parentIdx: i, childIdx: j, rowIdx: -1,
+		})
+	}
+}
+
+func (t *Table) matchesFilter(query string, data []string) bool {
+	if t.FilterFunc != nil {
+		return t.FilterFunc(query, data)
+	}
+	q := strings.ToLower(query)
+	for _, cell := range data {
+		if strings.Contains(strings.ToLower(cell), q) {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *Table) toggleExpansion() {

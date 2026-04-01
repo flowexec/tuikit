@@ -58,6 +58,9 @@ func DarkTheme() Theme {
 			Secondary:       "228",
 			Tertiary:        "63",
 			Info:            "39",
+			Warning:         "214",
+			Gray:            "245",
+			AppName:         "213",
 		})
 }
 
@@ -73,8 +76,11 @@ func DraculaTheme() Theme {
 			Emphasis:        "#f1fa8c",
 			Primary:         "#bd93f9",
 			Secondary:       "#8be9fd",
-			Tertiary:        "#ffb86c",
+			Tertiary:        "#50fa7b",
+			Warning:         "#ffb86c",
 			Info:            "#bd93f9",
+			Gray:            "#8694AA",
+			AppName:         "#ff79c6",
 		},
 	)
 }
@@ -92,7 +98,10 @@ func LightTheme() Theme {
 			Primary:         "#24292e",
 			Secondary:       "#586069",
 			Tertiary:        "#6a737d",
+			Warning:         "#e36209",
 			Info:            "#0366d6",
+			Gray:            "#959da5",
+			AppName:         "#6f42c1",
 		},
 	)
 }
@@ -110,7 +119,10 @@ func TokyoNightTheme() Theme {
 			Primary:         "#bb9af7",
 			Secondary:       "#7aa2f7",
 			Tertiary:        "#2ac3de",
+			Warning:         "#e0af68",
 			Info:            "#bb9af7",
+			Gray:            "#737aa2",
+			AppName:         "#f7768e",
 		},
 	)
 }

@@ -34,7 +34,7 @@ func testRenderState() *types.RenderState {
 		Width:         80,
 		Height:        40,
 		ContentWidth:  80,
-		ContentHeight: 35,
+		ContentHeight: 38,
 		Theme:         themes.EverforestTheme(),
 	}
 }
@@ -228,6 +228,290 @@ func TestTableExpansion(t *testing.T) {
 	content = table.View().Content
 	if !strings.Contains(content, "Child") {
 		t.Error("children should be visible after expansion")
+	}
+}
+
+// --- Table filter tests ---
+
+func TestTableFilterBasic(t *testing.T) {
+	state := testRenderState()
+	columns := []views.TableColumn{
+		{Title: "Name", Percentage: 50},
+		{Title: "Status", Percentage: 50},
+	}
+	rows := []views.TableRow{
+		{Data: []string{"Alpha", "Active"}},
+		{Data: []string{"Beta", "Inactive"}},
+		{Data: []string{"Gamma", "Active"}},
+	}
+	table := views.NewTable(state, columns, rows, views.TableDisplayFull)
+
+	// Activate filter with "/"
+	table.Update(tea.KeyPressMsg{Text: "/"})
+
+	// Type "alpha"
+	for _, ch := range "alpha" {
+		table.Update(tea.KeyPressMsg{Text: string(ch)})
+	}
+
+	content := table.View().Content
+	if !strings.Contains(content, "Alpha") {
+		t.Error("expected Alpha to be visible")
+	}
+	if strings.Contains(content, "Beta") {
+		t.Error("expected Beta to be filtered out")
+	}
+	if strings.Contains(content, "Gamma") {
+		t.Error("expected Gamma to be filtered out")
+	}
+}
+
+func TestTableFilterChildren(t *testing.T) {
+	state := testRenderState()
+	columns := []views.TableColumn{{Title: "Item", Percentage: 100}}
+	rows := []views.TableRow{
+		{Data: []string{"Parent"}, Children: []views.TableRow{
+			{Data: []string{"MatchChild"}},
+			{Data: []string{"Other"}},
+		}},
+		{Data: []string{"Unrelated"}},
+	}
+	table := views.NewTable(state, columns, rows, views.TableDisplayFull)
+
+	// Activate and type filter
+	table.Update(tea.KeyPressMsg{Text: "/"})
+	for _, ch := range "match" {
+		table.Update(tea.KeyPressMsg{Text: string(ch)})
+	}
+
+	content := table.View().Content
+	if !strings.Contains(content, "Parent") {
+		t.Error("expected Parent to be visible (has matching child)")
+	}
+	if !strings.Contains(content, "MatchChild") {
+		t.Error("expected MatchChild to be visible")
+	}
+	if strings.Contains(content, "Other") {
+		t.Error("expected Other child to be filtered out")
+	}
+	if strings.Contains(content, "Unrelated") {
+		t.Error("expected Unrelated to be filtered out")
+	}
+}
+
+func TestTableFilterNoMatch(t *testing.T) {
+	state := testRenderState()
+	columns := []views.TableColumn{{Title: "Item", Percentage: 100}}
+	rows := []views.TableRow{
+		{Data: []string{"Alpha"}},
+		{Data: []string{"Beta"}},
+	}
+	table := views.NewTable(state, columns, rows, views.TableDisplayFull)
+
+	table.Update(tea.KeyPressMsg{Text: "/"})
+	for _, ch := range "zzz" {
+		table.Update(tea.KeyPressMsg{Text: string(ch)})
+	}
+
+	content := table.View().Content
+	if !strings.Contains(content, "No matches") {
+		t.Error("expected 'No matches' when filter has no results")
+	}
+	if !strings.Contains(content, "Filter:") {
+		t.Error("expected filter bar to be visible even with no matches")
+	}
+}
+
+func TestTableFilterEscCancel(t *testing.T) {
+	state := testRenderState()
+	columns := []views.TableColumn{{Title: "Item", Percentage: 100}}
+	rows := []views.TableRow{
+		{Data: []string{"Alpha"}},
+		{Data: []string{"Beta"}},
+	}
+	table := views.NewTable(state, columns, rows, views.TableDisplayFull)
+
+	// Activate filter and type
+	table.Update(tea.KeyPressMsg{Text: "/"})
+	for _, ch := range "zzz" {
+		table.Update(tea.KeyPressMsg{Text: string(ch)})
+	}
+
+	// Esc should cancel and restore all rows
+	table.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	content := table.View().Content
+	if !strings.Contains(content, "Alpha") {
+		t.Error("expected Alpha to be visible after cancel")
+	}
+	if !strings.Contains(content, "Beta") {
+		t.Error("expected Beta to be visible after cancel")
+	}
+}
+
+func TestTableCapturingInput(t *testing.T) {
+	state := testRenderState()
+	columns := []views.TableColumn{{Title: "Item", Percentage: 100}}
+	rows := []views.TableRow{{Data: []string{"Alpha"}}}
+	table := views.NewTable(state, columns, rows, views.TableDisplayFull)
+
+	ic, ok := any(table).(tuikit.InputCapturer)
+	if !ok {
+		t.Fatal("Table should implement InputCapturer")
+	}
+	if ic.CapturingInput() {
+		t.Error("should not be capturing input initially")
+	}
+	table.Update(tea.KeyPressMsg{Text: "/"})
+	if !ic.CapturingInput() {
+		t.Error("should be capturing input after activating filter")
+	}
+}
+
+func TestTableFilterCustomFunc(t *testing.T) {
+	state := testRenderState()
+	columns := []views.TableColumn{{Title: "Name", Percentage: 100}}
+	rows := []views.TableRow{
+		{Data: []string{"Alice"}},
+		{Data: []string{"Bob"}},
+	}
+	table := views.NewTable(state, columns, rows, views.TableDisplayFull)
+	// Custom filter that only matches exact first character.
+	table.FilterFunc = func(query string, row []string) bool {
+		return len(row) > 0 && len(row[0]) > 0 && strings.EqualFold(string(row[0][0]), query)
+	}
+
+	table.Update(tea.KeyPressMsg{Text: "/"})
+	table.Update(tea.KeyPressMsg{Text: "b"})
+
+	content := table.View().Content
+	if !strings.Contains(content, "Bob") {
+		t.Error("expected Bob to match custom filter")
+	}
+	if strings.Contains(content, "Alice") {
+		t.Error("expected Alice to be filtered out by custom filter")
+	}
+}
+
+// --- HelpBindings tests ---
+
+func TestHelpBindingsNilViews(t *testing.T) {
+	state := testRenderState()
+	nilViews := map[string]tuikit.View{
+		"loading": views.NewLoadingView("test", state.Theme),
+		"error":   views.NewErrorView(errors.New("err"), state.Theme),
+		"frame":   views.NewFrameView(&sampleTypes.Echo{Content: "x"}),
+	}
+	for name, v := range nilViews {
+		t.Run(name, func(t *testing.T) {
+			if bindings := v.HelpBindings(); bindings != nil {
+				t.Errorf("expected nil HelpBindings, got %v", bindings)
+			}
+		})
+	}
+}
+
+func helpKeys(v tuikit.View) map[string]bool {
+	m := make(map[string]bool)
+	for _, b := range v.HelpBindings() {
+		m[b.Key] = true
+	}
+	return m
+}
+
+func TestHelpBindingsTable(t *testing.T) {
+	state := testRenderState()
+	cols := []views.TableColumn{{Title: "X", Percentage: 100}}
+	rows := []views.TableRow{{Data: []string{"a"}}}
+	table := views.NewTable(state, cols, rows, views.TableDisplayFull)
+	for _, key := range []string{"↑/↓/j/k", "enter", "space/tab", "/"} {
+		if !helpKeys(table)[key] {
+			t.Errorf("missing key %q in table help bindings", key)
+		}
+	}
+}
+
+func TestHelpBindingsDetail(t *testing.T) {
+	state := testRenderState()
+	view := views.NewDetailView(state, "body")
+	for _, key := range []string{"j/k", "u/d", "g/G"} {
+		if !helpKeys(view)[key] {
+			t.Errorf("missing key %q in detail help bindings", key)
+		}
+	}
+}
+
+func TestHelpBindingsMarkdown(t *testing.T) {
+	state := testRenderState()
+	view := views.NewMarkdownView(state, "# hi")
+	if !helpKeys(view)["↑/↓"] {
+		t.Error("missing key ↑/↓ in markdown help bindings")
+	}
+}
+
+// --- Theme render tests ---
+
+func TestRenderHeader(t *testing.T) {
+	theme := themes.EverforestTheme()
+	header := theme.RenderHeader("MyApp", "v1.0", "Env", "prod", 80)
+	if header == "" {
+		t.Fatal("expected non-empty header")
+	}
+	if !strings.Contains(header, "MyApp") {
+		t.Error("expected app name in header")
+	}
+	if !strings.Contains(header, "help") {
+		t.Error("expected help hint in header")
+	}
+	if !strings.Contains(header, "v1.0") {
+		t.Error("expected version in header")
+	}
+}
+
+func TestRenderHeaderNoVersion(t *testing.T) {
+	theme := themes.EverforestTheme()
+	header := theme.RenderHeader("MyApp", "", "", "", 80)
+	if !strings.Contains(header, "MyApp") {
+		t.Error("expected app name in header")
+	}
+	if strings.Contains(header, "v1") {
+		t.Error("expected no version in header")
+	}
+}
+
+func TestRenderHelpPopup(t *testing.T) {
+	theme := themes.EverforestTheme()
+	keys := []themes.HelpKey{
+		{Key: "q", Desc: "quit"},
+		{Key: "enter", Desc: "select"},
+	}
+	out := theme.RenderHelpPopup(keys, 80, 40)
+	if out == "" {
+		t.Fatal("expected non-empty popup")
+	}
+}
+
+func TestRenderHelpPopupEmpty(t *testing.T) {
+	theme := themes.EverforestTheme()
+	out := theme.RenderHelpPopup(nil, 80, 40)
+	if out != "" {
+		t.Fatalf("expected empty string for nil keys, got %q", out)
+	}
+}
+
+func TestRenderToast(t *testing.T) {
+	theme := themes.EverforestTheme()
+	levels := []themes.OutputLevel{
+		themes.OutputLevelSuccess,
+		themes.OutputLevelWarning,
+		themes.OutputLevelError,
+		themes.OutputLevelInfo,
+		themes.OutputLevelNotice,
+	}
+	for _, lvl := range levels {
+		out := theme.RenderToast("test message", lvl, 80)
+		if out == "" {
+			t.Errorf("expected non-empty toast for level %s", lvl)
+		}
 	}
 }
 

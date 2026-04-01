@@ -21,6 +21,10 @@ type TickMsg time.Time
 type SubmitMsg struct{}
 type ReplaceViewMsg struct{}
 
+type ToastDismissMsg struct {
+	ID int
+}
+
 func Tick() tea.Msg {
 	return tea.Tick(TickTime, func(t time.Time) tea.Msg {
 		return TickMsg(t)

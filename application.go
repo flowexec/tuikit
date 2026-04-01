@@ -1,11 +1,11 @@
 package tuikit
 
 type Application struct {
-	Name string
+	Name    string
+	Version string
 
 	stateKey   string
 	stateVal   string
-	notice     string
 	loadingMsg string
 }
 
@@ -44,9 +44,9 @@ func WithState(key, val string) ApplicationOption {
 	}
 }
 
-func WithNotice(notice string) ApplicationOption {
+func WithVersion(version string) ApplicationOption {
 	return func(a *Application) {
-		a.notice = notice
+		a.Version = version
 	}
 }
 

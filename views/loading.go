@@ -45,21 +45,16 @@ func (v *LoadingView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (v *LoadingView) View() tea.View {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
-	var txt string
-	if v.msg == "" {
-		txt = fmt.Sprintf("\n\n %s %s\n\n", v.spinner.View(), v.theme.RenderInfo(DefaultLoading))
-	} else {
-		txt = fmt.Sprintf("\n\n %s %s\n\n", v.spinner.View(), v.theme.RenderInfo(v.msg))
+	msg := v.msg
+	if msg == "" {
+		msg = DefaultLoading
 	}
+	txt := fmt.Sprintf("\n\n  %s %s\n\n", v.spinner.View(), v.theme.RenderInfo(msg))
 	return tea.View{Content: txt}
 }
 
-func (v *LoadingView) HelpMsg() string {
-	return ""
-}
-
-func (v *LoadingView) ShowFooter() bool {
-	return false
+func (v *LoadingView) HelpBindings() []themes.HelpKey {
+	return nil
 }
 
 func (v *LoadingView) Type() string {

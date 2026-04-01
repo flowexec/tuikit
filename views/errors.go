@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -38,15 +39,12 @@ func (v *ErrorView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (v *ErrorView) View() tea.View {
-	return tea.View{Content: v.theme.RenderError(errorString(v.err))}
+	content := lipgloss.NewStyle().MarginLeft(2).Render(v.theme.RenderError(errorString(v.err)))
+	return tea.View{Content: content}
 }
 
-func (v *ErrorView) HelpMsg() string {
-	return ""
-}
-
-func (v *ErrorView) ShowFooter() bool {
-	return false
+func (v *ErrorView) HelpBindings() []themes.HelpKey {
+	return nil
 }
 
 func (v *ErrorView) Type() string {

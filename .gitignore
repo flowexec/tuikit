@@ -11,3 +11,4 @@ coverage.txt
 *.sarif
 .idea
 
+.claude/settings.local.json

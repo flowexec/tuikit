@@ -16,3 +16,9 @@ const (
 	// LogNoticeLevel is a custom log level for notices.
 	LogNoticeLevel = log.InfoLevel + 1
 )
+
+// HelpKey represents a single keybinding with its description for display in help overlays.
+type HelpKey struct {
+	Key  string
+	Desc string
+}

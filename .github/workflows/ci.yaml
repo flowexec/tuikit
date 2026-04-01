@@ -51,7 +51,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          file: coverage.out
+          files: coverage.out
           fail_ci_if_error: true
 
   validate-generated:

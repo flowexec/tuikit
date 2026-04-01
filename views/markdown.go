@@ -94,12 +94,10 @@ func (v *MarkdownView) View() tea.View {
 	return tea.View{Content: v.viewport.View()}
 }
 
-func (v *MarkdownView) HelpMsg() string {
-	return ""
-}
-
-func (v *MarkdownView) ShowFooter() bool {
-	return true
+func (v *MarkdownView) HelpBindings() []themes.HelpKey {
+	return []themes.HelpKey{
+		{Key: "↑/↓", Desc: "scroll"},
+	}
 }
 
 func (v *MarkdownView) Type() string {

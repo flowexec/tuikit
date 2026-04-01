@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	HeaderHeight = 3
-	FooterHeight = 2
+	HeaderHeight = 2
 )
 
 //go:embed mdstyles.tmpl.json
@@ -54,7 +53,7 @@ func (t baseTheme) CollectionStyle() lipgloss.Style {
 
 func (t baseTheme) BoxStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
-		BorderStyle(lipgloss.NormalBorder()).
+		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color(t.Colors.Border)).
 		Padding(0, 1).
 		MarginLeft(2)
@@ -113,63 +112,150 @@ func (t baseTheme) RenderLevel(str string, lvl OutputLevel) string {
 	}
 }
 
-func (t baseTheme) RenderHeader(appName, stateKey, stateVal string, width int) string {
+func (t baseTheme) RenderHeader(appName, version, stateKey, stateVal string, width int) string {
 	if width == 0 {
-		return t.renderShortHeader(appName, stateKey, stateVal)
+		return t.renderShortHeader(appName, version, stateKey, stateVal)
 	}
+
+	pad := 1 // left/right padding
 
 	appNameStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(t.Colors.Border)).
-		Foreground(lipgloss.Color(t.Colors.Primary)).
-		AlignVertical(lipgloss.Center).
-		Height(HeaderHeight - 2). // top and bottom borders
-		Bold(true)
-	ctxStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.Colors.Secondary)).
-		Italic(true).
-		AlignVertical(lipgloss.Center).
-		Height(HeaderHeight)
+		Foreground(lipgloss.Color(t.Colors.Black)).
+		Background(lipgloss.Color(t.Colors.AppName)).
+		Bold(true).
+		Padding(0, 1)
+	sepStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(t.Colors.Border))
 
-	appNameContent := appNameStyle.Render(fmt.Sprintf(" %s ", appName))
-	var stateContent string
+	left := strings.Repeat(" ", pad) + appNameStyle.Render(appName)
 	if stateKey != "" && stateVal != "" {
-		stateContent = lipgloss.JoinHorizontal(
-			0,
-			ctxStyle.Render(t.RenderBold(fmt.Sprintf(" %s:", stateKey))),
-			ctxStyle.Render(fmt.Sprintf("%s ", stateVal)),
-		)
+		ctxStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(t.Colors.Secondary)).
+			Italic(true)
+		left += sepStyle.Render(" · ") +
+			ctxStyle.Render(fmt.Sprintf("%s:", stateKey)) +
+			ctxStyle.Render(stateVal)
 	}
-	fullContent := lipgloss.JoinHorizontal(0, appNameContent, stateContent)
-	borderWidth := width - lipgloss.Width(fullContent)
-	if borderWidth < 0 {
-		borderWidth = 0
+
+	// Right side: optional version + help hint.
+	hintStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(t.Colors.Gray))
+	versionStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(t.Colors.Tertiary))
+	var right string
+	if version != "" {
+		right = versionStyle.Render(version) + sepStyle.Render(" · ")
 	}
-	borderStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.Colors.Border)).
-		MaxWidth(borderWidth).
-		Height(HeaderHeight).AlignVertical(lipgloss.Center)
-	border := borderStyle.Render(strings.Repeat("─", borderWidth))
-	return lipgloss.JoinHorizontal(0, fullContent, border, "\n")
+	right += hintStyle.Render("? help") + strings.Repeat(" ", pad)
+
+	// Fill the gap with faint dots.
+	gapLen := width - lipgloss.Width(left) - lipgloss.Width(right) - 2 // 2 for spaces around dots
+	gapLen = max(gapLen, 1)
+	dotStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(t.Colors.Border)).Faint(true)
+	border := " " + dotStyle.Render(strings.Repeat("·", gapLen)) + " "
+
+	return left + border + right + "\n"
 }
 
-func (t baseTheme) renderShortHeader(appName, ctxKey, ctxVal string) string {
+func (t baseTheme) renderShortHeader(appName, version, ctxKey, ctxVal string) string {
 	headerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(t.Colors.Primary)).
-		Italic(true).Bold(true)
-	return headerStyle.Render(fmt.Sprintf("<!-- %s %s(%s) --!>", appName, ctxKey, ctxVal))
+		Bold(true)
+	parts := appName
+	if version != "" {
+		parts += " " + version
+	}
+	if ctxKey != "" {
+		parts += fmt.Sprintf(" %s:%s", ctxKey, ctxVal)
+	}
+	return headerStyle.Render(parts)
 }
 
-func (t baseTheme) RenderFooter(text string, width int) string {
-	footerStyle := lipgloss.NewStyle().
+func (t baseTheme) RenderHelpPopup(keys []HelpKey, width, height int) string {
+	if len(keys) == 0 {
+		return ""
+	}
+
+	// Find the longest key and description for sizing.
+	maxKeyLen := 0
+	maxDescLen := 0
+	for _, k := range keys {
+		maxKeyLen = max(maxKeyLen, len(k.Key))
+		maxDescLen = max(maxDescLen, len(k.Desc))
+	}
+
+	// Content width = key column + gap + desc column.
+	contentW := maxKeyLen + 2 + maxDescLen
+	// Add chrome: padding (3+3 horizontal).
+	boxW := contentW + 6
+	// Clamp to reasonable bounds.
+	boxW = max(boxW, 20)
+	boxW = min(boxW, width*8/10)
+	innerW := boxW - 6
+
+	bgColor := lipgloss.Color(t.Colors.Black)
+	keyStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(t.Colors.Secondary)).
+		Background(bgColor).
+		Bold(true).
+		Width(maxKeyLen).
+		Align(lipgloss.Right)
+	descStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(t.Colors.Gray)).
+		Background(bgColor)
+	titleStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(t.Colors.Primary)).
+		Background(bgColor).
+		Bold(true).
+		Width(innerW).
+		Align(lipgloss.Center)
+
+	lines := make([]string, 0, len(keys)+2)
+	lines = append(lines, titleStyle.Render("Help"))
+	lines = append(lines, "")
+	for _, k := range keys {
+		line := lipgloss.JoinHorizontal(lipgloss.Top,
+			keyStyle.Render(k.Key),
+			descStyle.Render("  "+k.Desc),
+		)
+		lines = append(lines, line)
+	}
+
+	content := strings.Join(lines, "\n")
+	boxStyle := lipgloss.NewStyle().
+		Background(bgColor).
+		Padding(1, 3).
+		Width(boxW).
+		MaxHeight(height * 7 / 10)
+
+	return boxStyle.Render(content)
+}
+
+func (t baseTheme) RenderToast(text string, lvl OutputLevel, width int) string {
+	maxW := min(40, width-2)
+
+	var accentColor string
+	switch lvl {
+	case OutputLevelSuccess:
+		accentColor = t.Colors.Success
+	case OutputLevelWarning:
+		accentColor = t.Colors.Warning
+	case OutputLevelError:
+		accentColor = t.Colors.Error
+	case OutputLevelNotice:
+		accentColor = t.Colors.Emphasis
+	case OutputLevelInfo:
+		accentColor = t.Colors.Info
+	}
+
+	boxStyle := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
-		BorderTop(true).BorderBottom(false).
-		BorderLeft(false).BorderRight(false).
-		BorderForeground(lipgloss.Color(t.Colors.Border)).
-		Height(FooterHeight - 1). // top border
-		Width(width)
-	return footerStyle.Render(text)
+		BorderForeground(lipgloss.Color(accentColor)).
+		Padding(0, 1).
+		MaxWidth(maxW)
+
+	styledText := t.RenderLevel(text, lvl)
+	return boxStyle.Render(styledText)
 }
 
 func (t baseTheme) RenderKeyAndValue(key, value string) string {

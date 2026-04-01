@@ -21,8 +21,9 @@ type Theme interface {
 	RenderEmphasis(text string) string
 	RenderUnknown(text string) string
 	RenderLevel(str string, lvl OutputLevel) string
-	RenderHeader(appName, stateKey, stateVal string, width int) string
-	RenderFooter(text string, width int) string
+	RenderHeader(appName, version, stateKey, stateVal string, width int) string
+	RenderHelpPopup(keys []HelpKey, width, height int) string
+	RenderToast(text string, lvl OutputLevel, width int) string
 	RenderKeyAndValue(key, value string) string
 	RenderKeyAndValueWithBreak(key, value string) string
 	RenderInputForm(text string) string

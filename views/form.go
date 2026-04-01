@@ -277,12 +277,8 @@ func (f *Form) View() tea.View {
 	return tea.View{Content: f.form.View()}
 }
 
-func (f *Form) HelpMsg() string {
-	return ""
-}
-
-func (f *Form) ShowFooter() bool {
-	return false
+func (f *Form) HelpBindings() []themes.HelpKey {
+	return nil
 }
 
 func (f *Form) Type() string {

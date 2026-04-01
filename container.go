@@ -12,6 +12,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/flowexec/tuikit/overlay"
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
 	"github.com/flowexec/tuikit/views"
@@ -20,9 +21,16 @@ import (
 type View interface {
 	tea.Model
 
-	ShowFooter() bool
-	HelpMsg() string
+	HelpBindings() []themes.HelpKey
 	Type() string
+}
+
+// InputCapturer is an optional interface views can implement to signal
+// that they are actively capturing keyboard input (e.g. a filter field).
+// When CapturingInput returns true, the Container forwards all keys
+// to the view instead of handling them globally.
+type InputCapturer interface {
+	CapturingInput() bool
 }
 
 type Container struct {
@@ -34,7 +42,8 @@ type Container struct {
 	sendFunc func(msg tea.Msg) // Temporary hack for testing
 
 	previousView, currentView, nextView View
-	showHelp                            bool
+	help                                *overlay.HelpPopup
+	toasts                              *overlay.ToastManager
 	finalizing                          *chan struct{}
 
 	viewMu  sync.RWMutex
@@ -80,6 +89,8 @@ func NewContainer(
 	if c.render.Theme == nil {
 		c.render.Theme = themes.EverforestTheme()
 	}
+	c.help = overlay.NewHelpPopup(c.render.Theme)
+	c.toasts = overlay.NewToastManager(c.render.Theme)
 
 	return c, nil
 }
@@ -158,7 +169,7 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Width:         msg.Width,
 			Height:        msg.Height,
 			ContentWidth:  msg.Width,
-			ContentHeight: msg.Height - (themes.HeaderHeight + themes.FooterHeight),
+			ContentHeight: msg.Height - themes.HeaderHeight,
 			Theme:         c.render.Theme,
 		}
 		c.stateMu.Unlock()
@@ -183,10 +194,27 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			c.HandleError(err)
 		}
 	case tea.KeyPressMsg:
+		if c.help.Visible() {
+			fwdMsg = nil
+			switch msg.String() {
+			case "esc", "h", "?":
+				c.help.Toggle()
+			}
+			break
+		}
 		if c.CurrentView().Type() == views.FormViewType {
 			fwdMsg = nil
 			_, cmd := c.CurrentView().Update(msg)
 			cmds = append(cmds, cmd)
+			break
+		}
+		// When the view is capturing input (e.g. filter field), only
+		// handle hard exit keys; forward everything else to the view.
+		if ic, ok := c.CurrentView().(InputCapturer); ok && ic.CapturingInput() {
+			if msg.String() == "ctrl+c" {
+				c.CurrentView().Update(tea.Quit())
+				return c, tea.Quit
+			}
 			break
 		}
 		switch msg.String() {
@@ -203,13 +231,13 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return c, nil
 			}
-		case "h":
-			if !c.CurrentView().ShowFooter() {
-				break
-			}
+		case "h", "?":
 			fwdMsg = nil
-			c.showHelp = !c.showHelp
+			c.help.SetViewKeys(c.CurrentView().HelpBindings())
+			c.help.Toggle()
 		}
+	case types.ToastDismissMsg:
+		c.toasts.Dismiss(msg.ID)
 	case types.TickMsg:
 		if c.Ready() && c.CurrentView().Type() == views.LoadingViewType && c.nextView != nil {
 			c.currentView = c.nextView
@@ -227,45 +255,47 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (c *Container) View() tea.View {
-	var footer string
-	var footerPrefix string
-
 	if !c.Ready() && c.CurrentView().Type() != views.LoadingViewType {
 		return tea.NewView("")
 	}
-	switch {
-	case c.CurrentView().Type() == views.FrameViewType:
+	if c.CurrentView().Type() == views.FrameViewType {
 		return c.CurrentView().View()
-	case c.CurrentView().Type() == views.LoadingViewType, c.CurrentView().Type() == views.FormViewType:
-		footer = ""
-	case !c.CurrentView().ShowFooter():
-		footer = c.render.Theme.RenderFooter(c.app.notice, c.render.Width)
-	case c.CurrentView().ShowFooter() && c.showHelp:
-		footerPrefix = "[ q: quit ] [ h: hide help ] [ ↑/↓: navigate ]"
-		if c.PreviousView() != nil {
-			footerPrefix += " [ esc: back ]"
-		}
-		footer = c.render.Theme.RenderFooter(fmt.Sprintf("%s ● %s", footerPrefix, c.CurrentView().HelpMsg()), c.render.Width)
-	case c.CurrentView().ShowFooter() && !c.showHelp && c.CurrentView().HelpMsg() != "":
-		footerPrefix = "[ q: quit ] [ h: show help ]"
-		if c.app.notice != "" {
-			footer = c.render.Theme.RenderFooter(
-				fmt.Sprintf("%s ● %s ● %s", footerPrefix, c.CurrentView().HelpMsg(), c.app.notice), c.render.Width,
-			)
-		} else {
-			footer = c.render.Theme.RenderFooter(footerPrefix, c.render.Width)
-		}
-	case c.CurrentView().ShowFooter() && !c.showHelp:
-		footerPrefix = "[ q: quit ] [ ↑/↓: navigate ]"
-		if c.app.notice != "" {
-			footer = c.render.Theme.RenderFooter(fmt.Sprintf("%s ● %s", footerPrefix, c.app.notice), c.render.Width)
-		} else {
-			footer = c.render.Theme.RenderFooter(footerPrefix, c.render.Width)
-		}
 	}
 
-	header := c.render.Theme.RenderHeader(c.app.Name, c.app.stateKey, c.app.stateVal, c.render.Width)
-	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Top, header, c.CurrentView().View().Content, footer))
+	header := c.render.Theme.RenderHeader(c.app.Name, c.app.Version, c.app.stateKey, c.app.stateVal, c.render.Width)
+	base := lipgloss.JoinVertical(lipgloss.Top, header, c.CurrentView().View().Content)
+
+	// Fast path: no overlays active.
+	if !c.help.Visible() && c.toasts.Empty() {
+		v := tea.NewView(base)
+		v.WindowTitle = c.app.Name
+		return v
+	}
+
+	// Overlay path: compose layers.
+	baseLayer := lipgloss.NewLayer(base)
+
+	if c.help.Visible() {
+		helpStr := c.help.Render(c.render.Width, c.render.Height)
+		helpW, helpH := lipgloss.Width(helpStr), lipgloss.Height(helpStr)
+		helpX := (c.render.Width - helpW) / 2
+		helpY := (c.render.Height - helpH) / 2
+		helpLayer := lipgloss.NewLayer(helpStr).X(helpX).Y(helpY).Z(10)
+		baseLayer.AddLayers(helpLayer)
+	}
+
+	if !c.toasts.Empty() {
+		toastStr := c.toasts.Render(c.render.Width, c.render.Height)
+		toastW := lipgloss.Width(toastStr)
+		toastH := lipgloss.Height(toastStr)
+		toastX := c.render.Width - toastW - 1
+		toastY := c.render.Height - toastH - 1
+		toastLayer := lipgloss.NewLayer(toastStr).X(toastX).Y(toastY).Z(5)
+		baseLayer.AddLayers(toastLayer)
+	}
+
+	comp := lipgloss.NewCompositor(baseLayer)
+	v := tea.NewView(comp.Render())
 	v.WindowTitle = c.app.Name
 	return v
 }
@@ -406,7 +436,10 @@ func (c *Container) RenderState() *types.RenderState {
 }
 
 func (c *Container) SetNotice(notice string, lvl themes.OutputLevel) {
-	c.app.notice = c.render.Theme.RenderLevel(notice, lvl)
+	cmd := c.toasts.Push(notice, lvl)
+	if cmd != nil {
+		c.Send(cmd, 0)
+	}
 }
 
 func (c *Container) SetState(key, val string) {
@@ -439,7 +472,7 @@ func WithInitialTermSize(width, height int) ContainerOptions {
 		c.render.Width = width
 		c.render.Height = height
 		c.render.ContentWidth = width
-		c.render.ContentHeight = height - (themes.HeaderHeight + themes.FooterHeight)
+		c.render.ContentHeight = height - themes.HeaderHeight
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"charm.land/lipgloss/v2"
 	"charm.land/log/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/muesli/termenv"
@@ -193,14 +194,14 @@ func (l *StandardLogger) Infof(msg string, args ...any) {
 	l.syncLoggerFormat()
 	switch l.mode {
 	case Text:
-		l.PlainTextInfo(fmt.Sprintf(msg, args...))
+		l.PlainTextInfo(safeSprintf(msg, args...))
 		return
 	case Hidden:
 		return
 	case JSON, Logfmt:
-		l.outHandler.Infof(msg, args...)
+		l.outHandler.Info(safeSprintf(msg, args...))
 		if l.archiveHandler != nil {
-			l.archiveHandler.Infof(msg, args...)
+			l.archiveHandler.Info(safeSprintf(msg, args...))
 		}
 	}
 }
@@ -209,14 +210,14 @@ func (l *StandardLogger) Noticef(msg string, args ...any) {
 	l.syncLoggerFormat()
 	switch l.mode {
 	case Text:
-		l.PlainTextNotice(fmt.Sprintf(msg, args...))
+		l.PlainTextNotice(safeSprintf(msg, args...))
 		return
 	case Hidden:
 		return
 	case JSON, Logfmt:
-		l.outHandler.With().Log(themes.LogNoticeLevel, msg, args...)
+		l.outHandler.With().Log(themes.LogNoticeLevel, safeSprintf(msg, args...))
 		if l.archiveHandler != nil {
-			l.archiveHandler.Errorf(msg, args...)
+			l.archiveHandler.Error(safeSprintf(msg, args...))
 		}
 	}
 }
@@ -225,14 +226,14 @@ func (l *StandardLogger) Debugf(msg string, args ...any) {
 	l.syncLoggerFormat()
 	switch l.mode {
 	case Text:
-		l.PlainTextDebug(fmt.Sprintf(msg, args...))
+		l.PlainTextDebug(safeSprintf(msg, args...))
 		return
 	case Hidden:
 		return
 	case JSON, Logfmt:
-		l.outHandler.Debugf(msg, args...)
+		l.outHandler.Debug(safeSprintf(msg, args...))
 		if l.archiveHandler != nil {
-			l.archiveHandler.Debugf(msg, args...)
+			l.archiveHandler.Debug(safeSprintf(msg, args...))
 		}
 	}
 }
@@ -251,14 +252,14 @@ func (l *StandardLogger) Errorf(msg string, args ...any) {
 	l.syncLoggerFormat()
 	switch l.mode {
 	case Text:
-		l.PlainTextError(fmt.Sprintf(msg, args...))
+		l.PlainTextError(safeSprintf(msg, args...))
 		return
 	case Hidden:
 		return
 	case JSON, Logfmt:
-		l.outHandler.Errorf(msg, args...)
+		l.outHandler.Error(safeSprintf(msg, args...))
 		if l.archiveHandler != nil {
-			l.archiveHandler.Errorf(msg, args...)
+			l.archiveHandler.Error(safeSprintf(msg, args...))
 		}
 	}
 }
@@ -267,14 +268,14 @@ func (l *StandardLogger) Warnf(msg string, args ...any) {
 	l.syncLoggerFormat()
 	switch l.mode {
 	case Text:
-		l.PlainTextWarn(fmt.Sprintf(msg, args...))
+		l.PlainTextWarn(safeSprintf(msg, args...))
 		return
 	case Hidden:
 		return
 	case JSON, Logfmt:
-		l.outHandler.Warnf(msg, args...)
+		l.outHandler.Warn(safeSprintf(msg, args...))
 		if l.archiveHandler != nil {
-			l.archiveHandler.Warnf(msg, args...)
+			l.archiveHandler.Warn(safeSprintf(msg, args...))
 		}
 	}
 }
@@ -285,18 +286,19 @@ func (l *StandardLogger) FatalErr(err error) {
 
 func (l *StandardLogger) Fatalf(msg string, args ...any) {
 	l.syncLoggerFormat()
+	formatted := safeSprintf(msg, args...)
 	switch l.mode {
 	case Text:
-		l.PlainTextError(fmt.Sprintf(msg, args...))
-		l.exitFunc(msg, args...)
+		l.PlainTextError(formatted)
+		l.exitFunc(formatted)
 		return
 	case Hidden:
 		return
 	case JSON, Logfmt:
 		if l.archiveHandler != nil {
-			l.archiveHandler.Errorf(msg, args...)
+			l.archiveHandler.Error(formatted)
 		}
-		l.outHandler.Fatalf(msg, args...)
+		l.outHandler.Fatal(formatted)
 	}
 }
 
@@ -450,6 +452,118 @@ func (l *StandardLogger) syncLoggerFormat() {
 	}
 }
 
+// safeSprintf applies fmt.Sprintf only when args are provided.
+// When called with no args, it returns msg as-is, avoiding
+// misinterpretation of % characters in the message.
+func safeSprintf(msg string, args ...any) string {
+	if len(args) == 0 {
+		return msg
+	}
+	return fmt.Sprintf(msg, args...)
+}
+
 func defaultExit(_ string, _ ...any) {
 	os.Exit(1)
+}
+
+// --- TaskAwareLogger implementation ---
+
+func (l *StandardLogger) PrintWithTask(task *TaskContext, line string) {
+	if l.mode == Hidden {
+		return
+	}
+	prefix := taskPrefix(task, l.theme.ColorPalette())
+	formatted := fmt.Sprintf("%s %s", prefix, line)
+	_, _ = fmt.Fprintln(l.outFile, formatted)
+
+	if l.archiveHandler != nil {
+		l.archiveHandler.Info(line, "task", task.Name)
+	}
+}
+
+func (l *StandardLogger) PrintErrWithTask(task *TaskContext, line string) {
+	if l.mode == Hidden {
+		return
+	}
+	prefix := taskPrefix(task, l.theme.ColorPalette())
+	errLine := l.theme.RenderError(line)
+	formatted := fmt.Sprintf("%s %s", prefix, errLine)
+	_, _ = fmt.Fprintln(l.outFile, formatted)
+
+	if l.archiveHandler != nil {
+		l.archiveHandler.Error(line, "task", task.Name)
+	}
+}
+
+func (l *StandardLogger) PrintTaskSummary(tasks []*TaskContext) {
+	if l.mode == Hidden || len(tasks) == 0 {
+		return
+	}
+
+	_, _ = fmt.Fprintln(l.outFile)
+
+	palette := l.theme.ColorPalette()
+	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(palette.Primary))
+	_, _ = fmt.Fprintln(l.outFile, headerStyle.Render("Task Summary"))
+
+	maxLen := 0
+	for _, t := range tasks {
+		if len(t.Name) > maxLen {
+			maxLen = len(t.Name)
+		}
+	}
+
+	for _, t := range tasks {
+		var statusColor string
+		switch t.Status {
+		case TaskSuccess:
+			statusColor = palette.Success
+		case TaskFailed:
+			statusColor = palette.Error
+		case TaskSkipped:
+			statusColor = palette.Warning
+		case TaskRunning:
+			statusColor = palette.Info
+		}
+
+		nameStyle := lipgloss.NewStyle().Width(maxLen + 2)
+		statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(statusColor)).Bold(true)
+		durationStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(palette.Gray))
+
+		line := fmt.Sprintf("  %s %s %s",
+			nameStyle.Render(t.Name),
+			statusStyle.Render(fmt.Sprintf("%-4s", t.Status.Icon())),
+			durationStyle.Render(t.Duration().Truncate(time.Millisecond).String()),
+		)
+		_, _ = fmt.Fprintln(l.outFile, line)
+	}
+	_, _ = fmt.Fprintln(l.outFile)
+
+	if l.archiveHandler != nil {
+		for _, t := range tasks {
+			l.archiveHandler.Info("task_summary",
+				"task", t.Name,
+				"status", t.Status.String(),
+				"duration", t.Duration().String(),
+			)
+		}
+	}
+}
+
+func (l *StandardLogger) BeginGroup(name string) {
+	if isCI() {
+		_, _ = fmt.Fprintf(l.outFile, "::group::%s\n", name)
+	} else {
+		palette := l.theme.ColorPalette()
+		style := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(palette.Secondary)).
+			Bold(true)
+		_, _ = fmt.Fprintf(l.outFile, "\n%s\n", style.Render("--- "+name+" ---"))
+	}
+}
+
+func (l *StandardLogger) EndGroup() {
+	if isCI() {
+		_, _ = fmt.Fprintln(l.outFile, "::endgroup::")
+	}
 }

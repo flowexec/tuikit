@@ -59,6 +59,7 @@ type TaskContext struct {
 	EndTime   time.Time
 	Status    TaskStatus
 	Error     error
+	Children  []*TaskContext
 }
 
 // Duration returns the elapsed time for the task.

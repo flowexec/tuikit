@@ -26,10 +26,11 @@ type DetailView struct {
 	body           string
 	metadataHeight int
 
-	viewport viewport.Model
-	theme    themes.Theme
-	width    int
-	height   int
+	viewport  viewport.Model
+	theme     themes.Theme
+	width     int
+	height    int
+	callbacks []types.KeyCallback
 }
 
 func NewDetailView(
@@ -74,6 +75,17 @@ func (v *DetailView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			v.viewport.GotoTop()
 		case "G":
 			v.viewport.GotoBottom()
+		default:
+			for _, cb := range v.callbacks {
+				if cb.Key == msg.String() {
+					if err := cb.Callback(); err != nil {
+						return v, nil
+					}
+					// Return a no-op cmd to ensure bubbletea triggers a re-render
+					// after the callback (e.g. for toast notifications).
+					return v, func() tea.Msg { return nil }
+				}
+			}
 		}
 	}
 
@@ -99,11 +111,18 @@ func (v *DetailView) View() tea.View {
 }
 
 func (v *DetailView) HelpBindings() []themes.HelpKey {
-	return []themes.HelpKey{
-		{Key: "j/k", Desc: "scroll"},
-		{Key: "u/d", Desc: "half-page"},
-		{Key: "g/G", Desc: "top/bottom"},
+	keys := make([]themes.HelpKey, 0, len(v.callbacks)+3)
+	for _, cb := range v.callbacks {
+		if cb.Key != "" && cb.Label != "" {
+			keys = append(keys, themes.HelpKey{Key: cb.Key, Desc: cb.Label})
+		}
 	}
+	keys = append(keys,
+		themes.HelpKey{Key: "j/k", Desc: "scroll"},
+		themes.HelpKey{Key: "u/d", Desc: "half-page"},
+		themes.HelpKey{Key: "g/G", Desc: "top/bottom"},
+	)
+	return keys
 }
 
 func (v *DetailView) Type() string {
@@ -112,6 +131,10 @@ func (v *DetailView) Type() string {
 
 func (v *DetailView) SetBody(body string) {
 	v.body = body
+}
+
+func (v *DetailView) SetKeyCallbacks(callbacks []types.KeyCallback) {
+	v.callbacks = callbacks
 }
 
 func (v *DetailView) SetMetadata(metadata ...DetailField) {

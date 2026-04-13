@@ -7,12 +7,20 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
 )
 
 const TableViewType = "table"
+
+const (
+	tableHeaderHeight      = themes.HeaderHeight
+	tableFilterHeight      = 1
+	tableMiniPaddingHeight = 4
+	tableMiniTopMargin     = 1
+)
 
 type TableDisplayMode int
 
@@ -50,6 +58,8 @@ type Table struct {
 	// When nil, a default case-insensitive substring match on all cells is used.
 	FilterFunc func(query string, row []string) bool
 
+	keyCallbacks []types.KeyCallback
+
 	showBorder      bool
 	filtering       bool
 	filterInput     textinput.Model
@@ -86,6 +96,10 @@ func NewTable(render *types.RenderState, columns []TableColumn, rows []TableRow,
 	return t
 }
 
+func (t *Table) SetKeyCallbacks(keys []types.KeyCallback) {
+	t.keyCallbacks = keys
+}
+
 func (t *Table) Init() tea.Cmd {
 	return nil
 }
@@ -120,13 +134,22 @@ func (t *Table) handleKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
 		t.filtering = true
 		t.filterInput.Focus()
 		t.filterInput.SetValue(t.filterQuery)
+	default:
+		for _, cb := range t.keyCallbacks {
+			if cb.Key == msg.String() {
+				if err := cb.Callback(); err != nil {
+					return func() tea.Msg { return err }
+				}
+				return nil
+			}
+		}
 	}
 	return nil
 }
 
 func (t *Table) handleFilterKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
-	case "esc":
+	case types.KeyEsc:
 		// Cancel: restore query from before filter was opened.
 		t.filterQuery = t.prevFilterQuery
 		t.filtering = false
@@ -238,7 +261,7 @@ func (t *Table) View() tea.View {
 		}
 	}
 
-	result := content.String()
+	result := strings.TrimRight(content.String(), "\n")
 
 	if t.displayMode == TableDisplayMini && t.showBorder {
 		result = t.renderMiniTable(result, tableWidth)
@@ -258,12 +281,13 @@ func (t *Table) View() tea.View {
 	// Pad to fill available height so the table occupies the full content area.
 	tableHeight := t.render.ContentHeight
 	if filterBar != "" {
-		tableHeight-- // reserve 1 line for filter bar
+		tableHeight -= tableFilterHeight
 	}
 	rendered := lipgloss.NewStyle().
 		MarginLeft(2).
 		Width(t.render.ContentWidth - 2).
 		Height(tableHeight).
+		MaxHeight(tableHeight).
 		Render(result)
 
 	if filterBar != "" {
@@ -282,12 +306,16 @@ func (t *Table) renderFilterBar(width int) string {
 }
 
 func (t *Table) HelpBindings() []themes.HelpKey {
-	return []themes.HelpKey{
+	bindings := []themes.HelpKey{
 		{Key: "↑/↓/j/k", Desc: "navigate"},
 		{Key: "enter", Desc: "select"},
 		{Key: "space/tab", Desc: "expand/collapse"},
 		{Key: "/", Desc: "filter"},
 	}
+	for _, cb := range t.keyCallbacks {
+		bindings = append(bindings, themes.HelpKey{Key: cb.Key, Desc: cb.Label})
+	}
+	return bindings
 }
 
 func (t *Table) Type() string {
@@ -357,8 +385,8 @@ func (t *Table) renderHeader(colWidths []int) string {
 
 	for i, col := range t.columns {
 		title := col.Title
-		if len(title) > colWidths[i]-1 {
-			title = title[:colWidths[i]-4] + "..."
+		if ansi.StringWidth(title) > colWidths[i]-1 {
+			title = ansi.Truncate(title, colWidths[i]-4, "...")
 		}
 
 		cellContent := style.Width(colWidths[i] - 1).Render(title)
@@ -415,12 +443,15 @@ func (t *Table) renderRow(row VisibleRow, colWidths []int, selected bool) string
 			break
 		}
 
+		if selected {
+			cellData = ansi.Strip(cellData)
+		}
 		content := t.cellPrefix(row, i, selected) + cellData
 		maxLen := colWidths[i] - 1
-		if len(content) > maxLen && maxLen > 3 {
-			content = content[:maxLen-3] + "..."
-		} else if len(content) > maxLen {
-			content = content[:maxLen]
+		if ansi.StringWidth(content) > maxLen && maxLen > 3 {
+			content = ansi.Truncate(content, maxLen-3, "...")
+		} else if ansi.StringWidth(content) > maxLen {
+			content = ansi.Truncate(content, maxLen, "")
 		}
 
 		cellContent := style.Width(colWidths[i] - 1).Render(content)
@@ -432,9 +463,15 @@ func (t *Table) renderRow(row VisibleRow, colWidths []int, selected bool) string
 
 func (t *Table) renderMiniTable(content string, tableWidth int) string {
 	leftPadding := max((t.render.ContentWidth-tableWidth)/2, 0)
-	topMargin := 1
+	topMargin := tableMiniTopMargin
+
+	contentHeight := t.render.ContentHeight
+	if t.filtering || t.filterQuery != "" {
+		contentHeight -= tableFilterHeight
+	}
+
 	// Border takes 2 lines (top+bottom), padding takes 2 lines (top+bottom)
-	boxHeight := max(t.render.ContentHeight-topMargin-2-2, 1)
+	boxHeight := max(contentHeight-topMargin-tableMiniPaddingHeight, 1)
 
 	borderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -451,33 +488,51 @@ func (t *Table) maxVisibleRows() int {
 	if t.render == nil || t.render.ContentHeight <= 0 {
 		return len(t.visibleRows)
 	}
-	// Reserve lines for: header (2 lines: title + border), scroll hints (up to 2 lines)
-	available := t.render.ContentHeight - 2
+
+	available := t.render.ContentHeight - tableHeaderHeight
 	if t.filtering || t.filterQuery != "" {
-		available-- // filter bar
+		available -= tableFilterHeight // filter bar
 	}
 	if t.displayMode == TableDisplayMini {
-		// Mini mode border + padding takes extra space
-		available -= 4
+		// Mini mode border + padding takes extra space, plus 1 empty line at the bottom
+		available -= (tableMiniPaddingHeight + tableMiniTopMargin + 1)
 	}
-	if available < 1 {
-		available = 1
-	}
+
 	if available >= len(t.visibleRows) {
 		return len(t.visibleRows)
 	}
-	return available
+
+	maxRows := available
+	if t.scrollOffset > 0 {
+		maxRows-- // reserve 1 line for top hint
+	}
+	if t.scrollOffset+maxRows < len(t.visibleRows) {
+		maxRows-- // reserve 1 line for down hint
+	}
+
+	if maxRows < 1 {
+		maxRows = 1
+	}
+	return maxRows
 }
 
 func (t *Table) ensureSelectedVisible() {
-	maxRows := t.maxVisibleRows()
-	if t.selectedIndex < t.scrollOffset {
-		t.scrollOffset = t.selectedIndex
-	} else if t.selectedIndex >= t.scrollOffset+maxRows {
-		t.scrollOffset = t.selectedIndex - maxRows + 1
-	}
-	if t.scrollOffset < 0 {
-		t.scrollOffset = 0
+	for i := 0; i < 5; i++ {
+		maxRows := t.maxVisibleRows()
+		oldOffset := t.scrollOffset
+
+		if t.selectedIndex < t.scrollOffset {
+			t.scrollOffset = t.selectedIndex
+		} else if t.selectedIndex >= t.scrollOffset+maxRows {
+			t.scrollOffset = t.selectedIndex - maxRows + 1
+		}
+		if t.scrollOffset < 0 {
+			t.scrollOffset = 0
+		}
+
+		if t.scrollOffset == oldOffset {
+			break
+		}
 	}
 }
 

@@ -33,6 +33,12 @@ type InputCapturer interface {
 	CapturingInput() bool
 }
 
+// BackHandler is an optional interface views can implement to intercept back
+// navigation events before the Container forcefully pops the view stack.
+type BackHandler interface {
+	HandleBack() bool
+}
+
 type Container struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
@@ -41,10 +47,11 @@ type Container struct {
 	render   *types.RenderState
 	sendFunc func(msg tea.Msg) // Temporary hack for testing
 
-	previousView, currentView, nextView View
-	help                                *overlay.HelpPopup
-	toasts                              *overlay.ToastManager
-	finalizing                          *chan struct{}
+	currentView, nextView View
+	viewStack             []View
+	help                  *overlay.HelpPopup
+	toasts                *overlay.ToastManager
+	finalizing            *chan struct{}
 
 	viewMu  sync.RWMutex
 	stateMu sync.RWMutex
@@ -156,7 +163,6 @@ func (c *Container) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-//nolint:gocognit,funlen
 func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	fwdMsg := msg
 	cmds := make([]tea.Cmd, 0)
@@ -183,8 +189,8 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case c.NextView() != nil:
 			err = c.SetView(c.NextView())
-		case c.PreviousView() != nil:
-			err = c.SetView(c.PreviousView())
+		case len(c.viewStack) > 0:
+			err = c.PopView()
 		case c.CurrentView().Type() == views.FormViewType:
 			return c, tea.Quit
 		default:
@@ -194,54 +200,18 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			c.HandleError(err)
 		}
 	case tea.KeyPressMsg:
-		if c.help.Visible() {
-			fwdMsg = nil
-			switch msg.String() {
-			case "esc", "h", "?":
-				c.help.Toggle()
-			}
-			break
+		model, cmd, handled := c.handleKeyPress(msg)
+		if handled {
+			return model, cmd
 		}
-		if c.CurrentView().Type() == views.FormViewType {
-			fwdMsg = nil
-			_, cmd := c.CurrentView().Update(msg)
-			cmds = append(cmds, cmd)
-			break
-		}
-		// When the view is capturing input (e.g. filter field), only
-		// handle hard exit keys; forward everything else to the view.
-		if ic, ok := c.CurrentView().(InputCapturer); ok && ic.CapturingInput() {
-			if msg.String() == "ctrl+c" {
-				c.CurrentView().Update(tea.Quit())
-				return c, tea.Quit
-			}
-			break
-		}
-		switch msg.String() {
-		case "ctrl+c", "q":
-			c.CurrentView().Update(tea.Quit())
-			return c, tea.Quit
-		case "esc", "backspace":
-			if c.PreviousView() == nil || c.CurrentView() == c.PreviousView() {
-				c.CurrentView().Update(tea.Quit())
-				return c, tea.Quit
-			} else {
-				if err := c.SetView(c.PreviousView()); err != nil {
-					c.HandleError(err)
-				}
-				return c, nil
-			}
-		case "h", "?":
-			fwdMsg = nil
-			c.help.SetViewKeys(c.CurrentView().HelpBindings())
-			c.help.Toggle()
-		}
+		fwdMsg, cmds = c.updateKeyFwdMsg(msg, fwdMsg, cmds)
 	case types.ToastDismissMsg:
 		c.toasts.Dismiss(msg.ID)
 	case types.TickMsg:
 		if c.Ready() && c.CurrentView().Type() == views.LoadingViewType && c.nextView != nil {
 			c.currentView = c.nextView
 			c.nextView = nil
+			cmds = append(cmds, c.currentView.Init())
 		}
 		cmds = append(cmds, types.Tick)
 	case tea.Cmd:
@@ -252,6 +222,62 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 	return c, tea.Batch(cmds...)
+}
+
+// handleKeyPress handles key events that produce an early return from Update.
+// It returns (model, cmd, true) when the caller should return immediately.
+func (c *Container) handleKeyPress(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
+	switch msg.String() {
+	case "ctrl+c", "q":
+		c.CurrentView().Update(tea.Quit())
+		return c, tea.Quit, true
+	case "esc", types.KeyBackspace:
+		if bh, ok := c.CurrentView().(BackHandler); ok && bh.HandleBack() {
+			return c, nil, false
+		}
+		c.viewMu.RLock()
+		stackLen := len(c.viewStack)
+		c.viewMu.RUnlock()
+		if stackLen == 0 {
+			c.CurrentView().Update(tea.Quit())
+			return c, tea.Quit, true
+		}
+		if err := c.PopView(); err != nil {
+			c.HandleError(err)
+		}
+		return c, nil, true
+	}
+	return c, nil, false
+}
+
+// updateKeyFwdMsg decides how a key press should be forwarded to the current view.
+func (c *Container) updateKeyFwdMsg(
+	msg tea.KeyPressMsg, fwdMsg tea.Msg, cmds []tea.Cmd,
+) (tea.Msg, []tea.Cmd) {
+	if c.help.Visible() {
+		switch msg.String() {
+		case "esc", "h", "?":
+			c.help.Toggle()
+		}
+		return nil, cmds
+	}
+	if c.CurrentView().Type() == views.FormViewType {
+		_, cmd := c.CurrentView().Update(msg)
+		return nil, append(cmds, cmd)
+	}
+	if ic, ok := c.CurrentView().(InputCapturer); ok && ic.CapturingInput() {
+		if msg.String() == "ctrl+c" {
+			c.CurrentView().Update(tea.Quit())
+		}
+		return fwdMsg, cmds
+	}
+	switch msg.String() {
+	case "h", "?":
+		c.help.SetViewKeys(c.CurrentView().HelpBindings())
+		c.help.Toggle()
+		return nil, cmds
+	}
+	return fwdMsg, cmds
 }
 
 func (c *Container) View() tea.View {
@@ -361,7 +387,7 @@ func (c *Container) SetView(v View) error {
 		c.SetNextView(v)
 	case switching:
 		c.viewMu.Lock()
-		c.previousView = c.currentView
+		c.viewStack = append(c.viewStack, c.currentView)
 		c.viewMu.Unlock()
 		fallthrough
 	default:
@@ -414,7 +440,30 @@ func (c *Container) CurrentView() View {
 func (c *Container) PreviousView() View {
 	c.viewMu.RLock()
 	defer c.viewMu.RUnlock()
-	return c.previousView
+	if len(c.viewStack) == 0 {
+		return nil
+	}
+	return c.viewStack[len(c.viewStack)-1]
+}
+
+func (c *Container) PopView() error {
+	c.viewMu.Lock()
+	if len(c.viewStack) == 0 {
+		c.viewMu.Unlock()
+		return errors.New("no previous view in stack")
+	}
+	prev := c.viewStack[len(c.viewStack)-1]
+	c.viewStack = c.viewStack[:len(c.viewStack)-1]
+	c.currentView = prev
+	if c.currentView == c.nextView {
+		c.nextView = nil
+	}
+	c.viewMu.Unlock()
+	cmd := c.CurrentView().Init()
+	if cmd != nil {
+		c.Send(cmd, 0)
+	}
+	return nil
 }
 
 func (c *Container) NextView() View {

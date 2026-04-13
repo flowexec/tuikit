@@ -12,9 +12,11 @@ var TickTime = time.Millisecond * 250
 
 // Key name strings returned by KeyPressMsg.String().
 const (
-	KeyUp    = "up"
-	KeyDown  = "down"
-	KeyEnter = "enter"
+	KeyUp        = "up"
+	KeyDown      = "down"
+	KeyEnter     = "enter"
+	KeyBackspace = "backspace"
+	KeyEsc       = "esc"
 )
 
 type TickMsg time.Time

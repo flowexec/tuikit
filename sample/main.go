@@ -70,6 +70,8 @@ func buildView(viewType string, container *tuikit.Container) tuikit.View {
 		view = buildCollectionView(container)
 	case "detail":
 		view = buildDetailView(container)
+	case "detail-content":
+		view = buildDetailContentView(container)
 	case "table":
 		view = buildTableFullView(container)
 	case "table-mini":
@@ -98,6 +100,44 @@ func buildDetailView(container *tuikit.Container) tuikit.View {
 		views.DetailField{Key: "Environment", Value: "production"},
 		views.DetailField{Key: "Created", Value: "2026-01-15 10:30:00"},
 		views.DetailField{Key: "Rotation", Value: "90 days"},
+	)
+}
+
+func buildDetailContentView(container *tuikit.Container) tuikit.View {
+	body := "# Detail Content View\n\n" +
+		"This is an example of the **DetailContent** view. " +
+		"It supports markdown formatting (via *glamour*), " +
+		"a formatted header, and structured key-value metadata.\n\n" +
+		"### Example Code\n\n" +
+		"```go\n" +
+		"package main\n\n" +
+		"import \"fmt\"\n\n" +
+		"func main() {\n" +
+		"\tfmt.Println(\"Hello tuikit!\")\n" +
+		"}\n" +
+		"```\n"
+
+	opts := views.DetailContentOpts{
+		Title:    "Sample Detail Content",
+		Subtitle: "Component Demonstration",
+		Metadata: []views.DetailField{
+			{Key: "Component", Value: "DetailContentView"},
+			{Key: "Package", Value: "tuikit/views"},
+			{Key: "Status", Value: "Experimental"},
+		},
+		Body:   body,
+		Footer: "Rendered to showcase DetailContentView",
+	}
+
+	return views.NewDetailContentView(
+		container.RenderState(),
+		opts,
+		types.KeyCallback{
+			Key: "enter", Label: "submit", Callback: func() error {
+				container.SetNotice("Acknowledged!", themes.OutputLevelSuccess)
+				return nil
+			},
+		},
 	)
 }
 

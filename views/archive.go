@@ -129,6 +129,11 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			v.model.SetItems(v.items)
+		case types.KeyEsc, types.KeyBackspace:
+			if v.activeEntry != nil {
+				v.activeEntry = nil
+				return v, nil
+			}
 		case types.KeyEnter:
 			if v.activeEntry != nil {
 				return v, nil
@@ -193,6 +198,14 @@ func (v *LogArchiveView) HelpBindings() []themes.HelpKey {
 
 func (v *LogArchiveView) CapturingInput() bool {
 	return v.model.FilterState() == list.Filtering
+}
+
+func (v *LogArchiveView) HandleBack() bool {
+	if v.activeEntry != nil {
+		// Handled back navigation cleanly internally in Update()
+		return true
+	}
+	return false
 }
 
 func (v *LogArchiveView) Type() string {

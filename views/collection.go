@@ -111,6 +111,11 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return v, nil
 			}
 			v.format = types.CollectionFormatJSON
+		case types.KeyEsc, types.KeyBackspace:
+			if v.format != types.CollectionFormatList {
+				v.format = types.CollectionFormatList
+				return v, nil
+			}
 		case types.KeyEnter:
 			if v.selectedFunc == nil {
 				return v, nil
@@ -245,6 +250,10 @@ func (v *CollectionView) HelpBindings() []themes.HelpKey {
 
 func (v *CollectionView) CapturingInput() bool {
 	return v.model.FilterState() == list.Filtering
+}
+
+func (v *CollectionView) HandleBack() bool {
+	return v.format != types.CollectionFormatList
 }
 
 func (v *CollectionView) Type() string {

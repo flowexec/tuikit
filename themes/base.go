@@ -159,16 +159,25 @@ func (t baseTheme) RenderHeader(appName, version, stateKey, stateVal string, wid
 
 func (t baseTheme) renderShortHeader(appName, version, ctxKey, ctxVal string) string {
 	headerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.Colors.Primary)).
+		Foreground(t.Colors.AppNameColor()).
 		Bold(true)
-	parts := appName
+	versionStyle := lipgloss.NewStyle().
+		Foreground(t.Colors.TertiaryColor()).
+		Bold(true)
+	ctxStyle := lipgloss.NewStyle().
+		Foreground(t.Colors.SecondaryColor()).
+		Italic(true)
+	sepStyle := lipgloss.NewStyle().
+		Foreground(t.Colors.BorderColor())
+
+	parts := headerStyle.Render(appName)
 	if version != "" {
-		parts += " " + version
+		parts += sepStyle.Render(" · ") + versionStyle.Render(version)
 	}
 	if ctxKey != "" {
-		parts += fmt.Sprintf(" %s:%s", ctxKey, ctxVal)
+		parts += sepStyle.Render(" · ") + ctxStyle.Render(fmt.Sprintf("%s:%s", ctxKey, ctxVal))
 	}
-	return headerStyle.Render(parts)
+	return parts
 }
 
 func (t baseTheme) RenderHelpPopup(keys []HelpKey, width, height int) string {

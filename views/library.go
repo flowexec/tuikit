@@ -105,7 +105,7 @@ func (l *Library) handleKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case types.KeyEnter, "right":
 		return l.handleForwardKey(msg)
-	case "esc", "backspace", "left":
+	case types.KeyEsc, types.KeyBackspace, "left":
 		if l.pageIndex > 0 {
 			l.navigateBack()
 			return l.activeView.Init()
@@ -171,7 +171,7 @@ func (l *Library) HelpBindings() []themes.HelpKey {
 		intercepted["enter"] = true
 	}
 	if l.pageIndex > 0 {
-		intercepted["esc"] = true
+		intercepted[types.KeyEsc] = true
 	}
 
 	// Sub-view keys (e.g. Table's filter, scroll), minus intercepted ones
@@ -198,18 +198,20 @@ func (l *Library) Type() string {
 	return LibraryViewType
 }
 
-// CapturingInput implements InputCapturer. When on a deeper page
-// (pageIndex > 0), the Library captures esc/backspace for internal
-// back-navigation. It also delegates to the sub-view if it is
-// capturing input (e.g. Table filter mode).
+// CapturingInput implements InputCapturer. It delegates to the sub-view
+// if it is capturing input (e.g. Table filter mode).
 func (l *Library) CapturingInput() bool {
-	if l.pageIndex > 0 {
-		return true
-	}
 	if ic, ok := l.activeView.(interface{ CapturingInput() bool }); ok {
 		return ic.CapturingInput()
 	}
 	return false
+}
+
+// HandleBack implements tuikit.BackHandler. It allows the Library to
+// consume the back navigation event internally when the user is deeply nested,
+// instead of having the Container pop the entire Library view.
+func (l *Library) HandleBack() bool {
+	return l.pageIndex > 0
 }
 
 func (l *Library) activatePage(index int) {
@@ -285,16 +287,16 @@ func (l *Library) renderBreadcrumb() string {
 	for i, b := range l.breadcrumbs {
 		if i == len(l.breadcrumbs)-1 {
 			parts[i] = lipgloss.NewStyle().
-				Foreground(cp.PrimaryColor()).Bold(true).
+				Foreground(cp.SecondaryColor()).Bold(true).
 				Render(b)
 		} else {
 			parts[i] = lipgloss.NewStyle().
-				Foreground(cp.GrayColor()).
+				Foreground(cp.GrayColor()).Italic(true).
 				Render(b)
 		}
 	}
 
-	sep := lipgloss.NewStyle().Foreground(cp.GrayColor()).Render(" > ")
+	sep := lipgloss.NewStyle().Foreground(cp.BorderColor()).Render(" › ")
 	trail := strings.Join(parts, sep)
 	return lipgloss.NewStyle().MarginLeft(2).MarginBottom(1).Render(trail)
 }

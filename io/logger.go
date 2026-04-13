@@ -8,7 +8,6 @@ import (
 	"charm.land/lipgloss/v2"
 	"charm.land/log/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/muesli/termenv"
 
 	"github.com/flowexec/tuikit/themes"
 )
@@ -106,7 +105,7 @@ func NewLogger(opts ...LoggerOptions) *StandardLogger {
 		opt(logger)
 	}
 	stdOutHandler := log.NewWithOptions(logger.outFile, log.Options{Level: log.InfoLevel, ReportCaller: false})
-	applyHumanReadableFormat(stdOutHandler, logger.theme, logger.mode)
+	applyHumanReadableFormat(stdOutHandler, logger.theme, logger.mode, logger.outFile)
 	logger.outHandler = stdOutHandler
 
 	if logger.archiveDir != "" {
@@ -122,7 +121,7 @@ func (l *StandardLogger) SetMode(mode LogMode) {
 		return
 	}
 	l.mode = mode
-	applyHumanReadableFormat(l.outHandler, l.theme, mode)
+	applyHumanReadableFormat(l.outHandler, l.theme, mode, l.outFile)
 }
 
 func (l *StandardLogger) LogMode() LogMode {
@@ -132,7 +131,7 @@ func (l *StandardLogger) LogMode() LogMode {
 	return l.mode
 }
 
-func applyHumanReadableFormat(handler *log.Logger, style themes.Theme, mode LogMode) {
+func applyHumanReadableFormat(handler *log.Logger, style themes.Theme, mode LogMode, out *os.File) {
 	handler.SetReportTimestamp(true)
 	if mode == JSON {
 		handler.SetFormatter(log.JSONFormatter)
@@ -142,7 +141,7 @@ func applyHumanReadableFormat(handler *log.Logger, style themes.Theme, mode LogM
 
 	handler.SetFormatter(log.TextFormatter)
 	handler.SetTimeFormat(time.Kitchen)
-	handler.SetColorProfile(colorprofile.Profile(termenv.ColorProfile()))
+	handler.SetColorProfile(colorprofile.Detect(out, os.Environ()))
 	handler.SetStyles(style.LoggerStyles())
 }
 
@@ -506,14 +505,9 @@ func (l *StandardLogger) PrintTaskSummary(tasks []*TaskContext) {
 	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(palette.Primary))
 	_, _ = fmt.Fprintln(l.outFile, headerStyle.Render("Task Summary"))
 
-	maxLen := 0
-	for _, t := range tasks {
-		if len(t.Name) > maxLen {
-			maxLen = len(t.Name)
-		}
-	}
+	maxLen := calcMaxTaskNameLen(tasks)
 
-	for _, t := range tasks {
+	renderTask := func(t *TaskContext, indent string) {
 		var statusColor string
 		switch t.Status {
 		case TaskSuccess:
@@ -526,25 +520,61 @@ func (l *StandardLogger) PrintTaskSummary(tasks []*TaskContext) {
 			statusColor = palette.Info
 		}
 
-		nameStyle := lipgloss.NewStyle().Width(maxLen + 2)
+		nameStyle := lipgloss.NewStyle().Width(maxLen + 2 - len(indent))
 		statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(statusColor)).Bold(true)
 		durationStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(palette.Gray))
 
-		line := fmt.Sprintf("  %s %s %s",
+		line := fmt.Sprintf("  %s%s %s %s",
+			indent,
 			nameStyle.Render(t.Name),
 			statusStyle.Render(fmt.Sprintf("%-4s", t.Status.Icon())),
 			durationStyle.Render(t.Duration().Truncate(time.Millisecond).String()),
 		)
 		_, _ = fmt.Fprintln(l.outFile, line)
 	}
+
+	for _, t := range tasks {
+		renderTask(t, "")
+		for _, c := range t.Children {
+			renderTask(c, "  ")
+		}
+	}
 	_, _ = fmt.Fprintln(l.outFile)
 
 	if l.archiveHandler != nil {
-		for _, t := range tasks {
+		l.archiveTaskSummary(tasks)
+	}
+}
+
+func calcMaxTaskNameLen(tasks []*TaskContext) int {
+	maxLen := 0
+	for _, t := range tasks {
+		if len(t.Name) > maxLen {
+			maxLen = len(t.Name)
+		}
+		for _, c := range t.Children {
+			// Children are indented by 2 spaces, account for that in width
+			if len(c.Name)+2 > maxLen {
+				maxLen = len(c.Name) + 2
+			}
+		}
+	}
+	return maxLen
+}
+
+func (l *StandardLogger) archiveTaskSummary(tasks []*TaskContext) {
+	for _, t := range tasks {
+		l.archiveHandler.Info("task_summary",
+			"task", t.Name,
+			"status", t.Status.String(),
+			"duration", t.Duration().String(),
+		)
+		for _, c := range t.Children {
 			l.archiveHandler.Info("task_summary",
-				"task", t.Name,
-				"status", t.Status.String(),
-				"duration", t.Duration().String(),
+				"task", c.Name,
+				"parent", t.Name,
+				"status", c.Status.String(),
+				"duration", c.Duration().String(),
 			)
 		}
 	}

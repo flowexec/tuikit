@@ -615,28 +615,28 @@ func TestLibraryNavigateBackward(t *testing.T) {
 	}
 }
 
-func TestLibraryCapturingInput(t *testing.T) {
+func TestLibraryBackHandler(t *testing.T) {
 	lib := testLibrary()
-	ic, ok := any(lib).(tuikit.InputCapturer)
+	bh, ok := any(lib).(tuikit.BackHandler)
 	if !ok {
-		t.Fatal("Library should implement InputCapturer")
+		t.Fatal("Library should implement BackHandler")
 	}
 
-	// On page 0, not capturing
-	if ic.CapturingInput() {
-		t.Error("should not be capturing input on page 0")
+	// On page 0, not handling back
+	if bh.HandleBack() {
+		t.Error("should not be handling back on page 0")
 	}
 
 	// Navigate to page 1
 	lib.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if !ic.CapturingInput() {
-		t.Error("should be capturing input on page > 0")
+	if !bh.HandleBack() {
+		t.Error("should be handling back on page > 0")
 	}
 
 	// Navigate back to page 0
 	lib.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if ic.CapturingInput() {
-		t.Error("should not be capturing input after returning to page 0")
+	if bh.HandleBack() {
+		t.Error("should not be handling back after returning to page 0")
 	}
 }
 

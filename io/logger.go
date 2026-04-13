@@ -27,6 +27,7 @@ type StandardLogger struct {
 	archiveID      string
 	archiveFile    *os.File
 	outFile        *os.File
+	outWriter      *colorprofile.Writer // color-profile-aware writer for styled output
 	exitFunc       func(msg string, args ...any)
 }
 
@@ -107,6 +108,7 @@ func NewLogger(opts ...LoggerOptions) *StandardLogger {
 	stdOutHandler := log.NewWithOptions(logger.outFile, log.Options{Level: log.InfoLevel, ReportCaller: false})
 	applyHumanReadableFormat(stdOutHandler, logger.theme, logger.mode, logger.outFile)
 	logger.outHandler = stdOutHandler
+	logger.outWriter = colorprofile.NewWriter(logger.outFile, os.Environ())
 
 	if logger.archiveDir != "" {
 		setupArchive(logger)
@@ -368,7 +370,7 @@ func (l *StandardLogger) PlainTextInfo(msg string) {
 	if l.outHandler.GetLevel() < log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderInfo(msg))
+	_, _ = fmt.Fprintln(l.outWriter, ""+l.theme.RenderInfo(msg))
 	if l.archiveHandler != nil {
 		l.archiveHandler.Info(msg)
 	}
@@ -378,7 +380,7 @@ func (l *StandardLogger) PlainTextNotice(msg string) {
 	if l.outHandler.GetLevel() < log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderNotice(msg))
+	_, _ = fmt.Fprintln(l.outWriter, ""+l.theme.RenderNotice(msg))
 	if l.archiveHandler != nil {
 		l.archiveHandler.With().Log(themes.LogNoticeLevel, msg)
 	}
@@ -388,14 +390,14 @@ func (l *StandardLogger) PlainTextSuccess(msg string) {
 	if l.outHandler.GetLevel() < log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderSuccess(msg))
+	_, _ = fmt.Fprintln(l.outWriter, ""+l.theme.RenderSuccess(msg))
 	if l.archiveHandler != nil {
 		l.archiveHandler.Info(msg)
 	}
 }
 
 func (l *StandardLogger) PlainTextError(msg string) {
-	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderError(msg))
+	_, _ = fmt.Fprintln(l.outWriter, ""+l.theme.RenderError(msg))
 	if l.archiveHandler != nil {
 		l.archiveHandler.Error(msg)
 	}
@@ -405,7 +407,7 @@ func (l *StandardLogger) PlainTextWarn(msg string) {
 	if l.outHandler.GetLevel() < log.InfoLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderWarning(msg))
+	_, _ = fmt.Fprintln(l.outWriter, ""+l.theme.RenderWarning(msg))
 	if l.archiveHandler != nil {
 		l.archiveHandler.Warn(msg)
 	}
@@ -415,7 +417,7 @@ func (l *StandardLogger) PlainTextDebug(msg string) {
 	if l.outHandler.GetLevel() > log.DebugLevel {
 		return
 	}
-	_, _ = fmt.Fprintln(l.outFile, ""+l.theme.RenderEmphasis(msg))
+	_, _ = fmt.Fprintln(l.outWriter, ""+l.theme.RenderEmphasis(msg))
 	if l.archiveHandler != nil {
 		l.archiveHandler.Debug(msg)
 	}
@@ -473,7 +475,7 @@ func (l *StandardLogger) PrintWithTask(task *TaskContext, line string) {
 	}
 	prefix := taskPrefix(task, l.theme.ColorPalette())
 	formatted := fmt.Sprintf("%s %s", prefix, line)
-	_, _ = fmt.Fprintln(l.outFile, formatted)
+	_, _ = fmt.Fprintln(l.outWriter, formatted)
 
 	if l.archiveHandler != nil {
 		l.archiveHandler.Info(line, "task", task.Name)
@@ -487,7 +489,7 @@ func (l *StandardLogger) PrintErrWithTask(task *TaskContext, line string) {
 	prefix := taskPrefix(task, l.theme.ColorPalette())
 	errLine := l.theme.RenderError(line)
 	formatted := fmt.Sprintf("%s %s", prefix, errLine)
-	_, _ = fmt.Fprintln(l.outFile, formatted)
+	_, _ = fmt.Fprintln(l.outWriter, formatted)
 
 	if l.archiveHandler != nil {
 		l.archiveHandler.Error(line, "task", task.Name)
@@ -499,11 +501,11 @@ func (l *StandardLogger) PrintTaskSummary(tasks []*TaskContext) {
 		return
 	}
 
-	_, _ = fmt.Fprintln(l.outFile)
+	_, _ = fmt.Fprintln(l.outWriter)
 
 	palette := l.theme.ColorPalette()
 	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(palette.Primary))
-	_, _ = fmt.Fprintln(l.outFile, headerStyle.Render("Task Summary"))
+	_, _ = fmt.Fprintln(l.outWriter, headerStyle.Render("Task Summary"))
 
 	maxLen := calcMaxTaskNameLen(tasks)
 
@@ -530,7 +532,7 @@ func (l *StandardLogger) PrintTaskSummary(tasks []*TaskContext) {
 			statusStyle.Render(fmt.Sprintf("%-4s", t.Status.Icon())),
 			durationStyle.Render(t.Duration().Truncate(time.Millisecond).String()),
 		)
-		_, _ = fmt.Fprintln(l.outFile, line)
+		_, _ = fmt.Fprintln(l.outWriter, line)
 	}
 
 	for _, t := range tasks {
@@ -539,7 +541,7 @@ func (l *StandardLogger) PrintTaskSummary(tasks []*TaskContext) {
 			renderTask(c, "  ")
 		}
 	}
-	_, _ = fmt.Fprintln(l.outFile)
+	_, _ = fmt.Fprintln(l.outWriter)
 
 	if l.archiveHandler != nil {
 		l.archiveTaskSummary(tasks)
@@ -588,7 +590,7 @@ func (l *StandardLogger) BeginGroup(name string) {
 		style := lipgloss.NewStyle().
 			Foreground(lipgloss.Color(palette.Secondary)).
 			Bold(true)
-		_, _ = fmt.Fprintf(l.outFile, "\n%s\n", style.Render("--- "+name+" ---"))
+		_, _ = fmt.Fprintf(l.outWriter, "\n%s\n", style.Render("--- "+name+" ---"))
 	}
 }
 

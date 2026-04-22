@@ -6,6 +6,7 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/term"
 )
 
 const (
@@ -22,8 +23,19 @@ func NewTheme(name string, cp ColorPalette) Theme {
 		Name:        name,
 		SpinnerType: spinner.Points,
 		Colors:      &colors,
-		isDark:      lipgloss.HasDarkBackground(os.Stdin, os.Stdout),
+		isDark:      detectDarkBackground(),
 	}
+}
+
+// detectDarkBackground checks if the terminal has a dark background.
+// It only queries the terminal when both stdin and stdout are real TTYs,
+// avoiding hangs in CI environments and headless contexts where the
+// terminal won't respond to OSC escape sequences.
+func detectDarkBackground() bool {
+	if !term.IsTerminal(os.Stdin.Fd()) || !term.IsTerminal(os.Stdout.Fd()) {
+		return true // default to dark when not a real terminal
+	}
+	return lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
 }
 
 type ThemeFunc func() Theme

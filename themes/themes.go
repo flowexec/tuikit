@@ -72,7 +72,7 @@ func DarkTheme() Theme {
 			Info:            "#539BF5",
 			Body:            "#E6EDF3",
 			Border:          "#30363D",
-			Warning:         "#D29922",
+			Warning:         "#C9A800",
 			Gray:            "#768390",
 			AppName:         "#D897FF",
 			Black:           "#0D1117",

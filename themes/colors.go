@@ -81,7 +81,7 @@ func WithDefaultColors(orig ColorPalette) ColorPalette {
 		cp.Warning = "#DFA000"
 	}
 	if cp.Error == "" {
-		cp.Error = "#F85552"
+		cp.Error = "#FF6B6B"
 	}
 	if cp.Info == "" {
 		cp.Info = "#3A94C5"

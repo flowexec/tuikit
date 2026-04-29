@@ -317,7 +317,7 @@ func (t baseTheme) LoggerStyles() *log.Styles {
 	baseStyles.Timestamp = baseStyles.Timestamp.Foreground(lipgloss.Color(t.Colors.Gray))
 	baseStyles.Levels = map[log.Level]lipgloss.Style{
 		log.InfoLevel:  baseStyles.Levels[log.InfoLevel].Foreground(lipgloss.Color(t.Colors.Info)).SetString("INF"),
-		LogNoticeLevel: baseStyles.Levels[LogNoticeLevel].Foreground(lipgloss.Color(t.Colors.Warning)).SetString("NTC"),
+		LogNoticeLevel: baseStyles.Levels[LogNoticeLevel].Foreground(lipgloss.Color(t.Colors.Emphasis)).SetString("NTC"),
 		log.WarnLevel:  baseStyles.Levels[log.WarnLevel].Foreground(lipgloss.Color(t.Colors.Warning)).SetString("WRN"),
 		log.ErrorLevel: baseStyles.Levels[log.ErrorLevel].Foreground(lipgloss.Color(t.Colors.Error)).SetString("ERR"),
 		log.DebugLevel: baseStyles.Levels[log.DebugLevel].Foreground(lipgloss.Color(t.Colors.Emphasis)).SetString("DBG"),

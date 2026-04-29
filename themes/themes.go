@@ -53,26 +53,30 @@ func AllThemes() map[string]ThemeFunc {
 // EverforestTheme Uses the colors from the Everforest color scheme
 // See https://gogh-co.github.io/Gogh/
 func EverforestTheme() Theme {
-	return NewTheme(everforest, ColorPalette{}) // inherit from defaults
+	return NewTheme(everforest, ColorPalette{
+		Secondary: "#A7C080", // yellow-green — more distinct from teal primary than default sage
+	})
 }
 
-// DarkTheme Use colors from Glamour Dracula theme
+// DarkTheme Use colors from GitHub Dark
 // See https://raw.githubusercontent.com/charmbracelet/glamour/refs/heads/master/styles/dark.json
 func DarkTheme() Theme {
 	return NewTheme(
 		dark,
 		ColorPalette{
 			ChromaCodeStyle: "github-dark",
-			Body:            "252",
-			Border:          "240",
-			Emphasis:        "30",
-			Primary:         "39",
-			Secondary:       "228",
-			Tertiary:        "63",
-			Info:            "39",
-			Warning:         "214",
-			Gray:            "245",
-			AppName:         "213",
+			Primary:         "#539BF5",
+			Secondary:       "#57AB5A",
+			Tertiary:        "#986EE2",
+			Emphasis:        "#E88B2E",
+			Info:            "#539BF5",
+			Body:            "#E6EDF3",
+			Border:          "#30363D",
+			Warning:         "#D29922",
+			Gray:            "#768390",
+			AppName:         "#D897FF",
+			Black:           "#0D1117",
+			White:           "#F0F6FF",
 		})
 }
 
@@ -83,37 +87,42 @@ func DraculaTheme() Theme {
 		dracula,
 		ColorPalette{
 			ChromaCodeStyle: "dracula",
-			Body:            "#f8f8f2",
-			Border:          "#6272A4",
-			Emphasis:        "#f1fa8c",
 			Primary:         "#bd93f9",
 			Secondary:       "#8be9fd",
 			Tertiary:        "#50fa7b",
-			Warning:         "#ffb86c",
+			Emphasis:        "#f1fa8c",
 			Info:            "#bd93f9",
+			Body:            "#f8f8f2",
+			Border:          "#6272A4",
+			Warning:         "#ffb86c",
+			Error:           "#ff5555",
 			Gray:            "#8694AA",
 			AppName:         "#ff79c6",
+			Black:           "#21222C",
+			White:           "#F8F8F2",
 		},
 	)
 }
 
-// LightTheme Use colors from Glamour Light theme
+// LightTheme Use colors from GitHub Light
 // See https://raw.githubusercontent.com/charmbracelet/glamour/refs/heads/master/styles/light.json
 func LightTheme() Theme {
 	return NewTheme(
 		light,
 		ColorPalette{
 			ChromaCodeStyle: "github",
-			Body:            "#ffffff",
-			Border:          "#e1e4e8",
-			Emphasis:        "#0366d6",
-			Primary:         "#24292e",
-			Secondary:       "#586069",
-			Tertiary:        "#6a737d",
-			Warning:         "#e36209",
-			Info:            "#0366d6",
+			Primary:         "#0969DA",
+			Secondary:       "#1F883D",
+			Tertiary:        "#8250DF",
+			Emphasis:        "#9A3FB4",
+			Info:            "#0969DA",
+			Body:            "#24292F",
+			Border:          "#D0D7DE",
+			Warning:         "#BF8700",
 			Gray:            "#959da5",
 			AppName:         "#6f42c1",
+			Black:           "#1F2328",
+			White:           "#F6F8FA",
 		},
 	)
 }
@@ -125,16 +134,18 @@ func TokyoNightTheme() Theme {
 		tokyoNight,
 		ColorPalette{
 			ChromaCodeStyle: "tokyonight-night",
-			Body:            "#a9b1d6",
-			Border:          "#565f89",
-			Emphasis:        "#7aa2f7",
 			Primary:         "#bb9af7",
 			Secondary:       "#7aa2f7",
 			Tertiary:        "#2ac3de",
-			Warning:         "#e0af68",
+			Emphasis:        "#ff9e64",
 			Info:            "#bb9af7",
+			Body:            "#a9b1d6",
+			Border:          "#565f89",
+			Warning:         "#e0af68",
 			Gray:            "#737aa2",
 			AppName:         "#f7768e",
+			Black:           "#1A1B26",
+			White:           "#C0CAF5",
 		},
 	)
 }

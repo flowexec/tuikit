@@ -75,7 +75,7 @@ func WithDefaultColors(orig ColorPalette) ColorPalette {
 		cp.Tertiary = "#DBBC7F"
 	}
 	if cp.Success == "" {
-		cp.Success = "#8DA101"
+		cp.Success = "#8EB93B"
 	}
 	if cp.Warning == "" {
 		cp.Warning = "#DFA000"

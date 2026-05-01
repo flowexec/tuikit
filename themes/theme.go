@@ -29,6 +29,8 @@ type Theme interface {
 	RenderInputForm(text string) string
 	RenderInContainer(text string) string
 
+	SelectionForeground() lipgloss.Style
+
 	Spinner() spinner.Spinner
 	SpinnerStyle() lipgloss.Style
 	EntityViewStyle() lipgloss.Style

@@ -400,9 +400,9 @@ func (t *Table) rowStyle(row VisibleRow, selected bool) lipgloss.Style {
 	cp := t.render.Theme.ColorPalette()
 	switch {
 	case selected:
-		return lipgloss.NewStyle().
+		return t.render.Theme.SelectionForeground().
 			Background(cp.PrimaryColor()).
-			Foreground(cp.GrayColor()).Bold(true)
+			Bold(true)
 	case row.isChild:
 		return lipgloss.NewStyle().Foreground(cp.TertiaryColor())
 	default:

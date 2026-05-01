@@ -43,6 +43,13 @@ func (t baseTheme) SpinnerStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color(t.Colors.Secondary))
 }
 
+func (t baseTheme) SelectionForeground() lipgloss.Style {
+	if t.isDark {
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(t.Colors.Black))
+	}
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(t.Colors.White))
+}
+
 func (t baseTheme) EntityViewStyle() lipgloss.Style {
 	return lipgloss.NewStyle().MarginLeft(2)
 }
@@ -119,8 +126,7 @@ func (t baseTheme) RenderHeader(appName, version, stateKey, stateVal string, wid
 
 	pad := 1 // left/right padding
 
-	appNameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(t.Colors.Black)).
+	appNameStyle := t.SelectionForeground().
 		Background(lipgloss.Color(t.Colors.AppName)).
 		Bold(true).
 		Padding(0, 1)
@@ -358,10 +364,18 @@ func (t baseTheme) huhStyles(isDark bool) *huh.Styles {
 	baseTheme.Focused.Title = baseTheme.Focused.Title.Foreground(lipgloss.Color(t.Colors.Primary)).Bold(true)
 	baseTheme.Focused.Description = baseTheme.Focused.Description.Foreground(lipgloss.Color(t.Colors.Body))
 	baseTheme.Focused.ErrorMessage = baseTheme.Focused.ErrorMessage.Foreground(lipgloss.Color(t.Colors.Error))
-	baseTheme.Focused.FocusedButton = baseTheme.Focused.FocusedButton.Foreground(lipgloss.Color(t.Colors.Primary)).
-		Background(lipgloss.Color(t.Colors.Tertiary))
-	baseTheme.Focused.BlurredButton = baseTheme.Focused.BlurredButton.Foreground(lipgloss.Color(t.Colors.Secondary)).
-		Background(lipgloss.Color(t.Colors.Gray))
+	baseTheme.Focused.FocusedButton = t.SelectionForeground().
+		Background(lipgloss.Color(t.Colors.Primary)).
+		Bold(true)
+
+	// Dark themes: Black bg gives body text high contrast; light themes: Border bg works well.
+	blurredBtnBg := t.Colors.Border
+	if t.isDark {
+		blurredBtnBg = t.Colors.Black
+	}
+	baseTheme.Focused.BlurredButton = baseTheme.Focused.BlurredButton.
+		Foreground(lipgloss.Color(t.Colors.Body)).
+		Background(lipgloss.Color(blurredBtnBg))
 
 	baseTheme.Focused.TextInput.Placeholder =
 		baseTheme.Focused.TextInput.Placeholder.Foreground(lipgloss.Color(t.Colors.Body))
@@ -379,10 +393,12 @@ func (t baseTheme) huhStyles(isDark bool) *huh.Styles {
 	baseTheme.Blurred.Title = baseTheme.Blurred.Title.Foreground(lipgloss.Color(t.Colors.White))
 	baseTheme.Blurred.Description = baseTheme.Blurred.Description.Foreground(lipgloss.Color(t.Colors.Gray))
 	baseTheme.Blurred.ErrorMessage = baseTheme.Blurred.ErrorMessage.Foreground(lipgloss.Color(t.Colors.Emphasis))
-	baseTheme.Blurred.FocusedButton = baseTheme.Blurred.FocusedButton.Foreground(lipgloss.Color(t.Colors.Secondary)).
-		Background(lipgloss.Color(t.Colors.Gray))
-	baseTheme.Blurred.BlurredButton = baseTheme.Blurred.BlurredButton.Foreground(lipgloss.Color(t.Colors.Gray)).
-		Background(lipgloss.Color(t.Colors.Gray))
+	baseTheme.Blurred.FocusedButton = baseTheme.Blurred.FocusedButton.
+		Foreground(lipgloss.Color(t.Colors.Body)).
+		Background(lipgloss.Color(blurredBtnBg))
+	baseTheme.Blurred.BlurredButton = baseTheme.Blurred.BlurredButton.
+		Foreground(lipgloss.Color(t.Colors.Gray)).
+		Background(lipgloss.NoColor{})
 
 	baseTheme.Blurred.TextInput.Placeholder = baseTheme.Blurred.TextInput.Placeholder.
 		Foreground(lipgloss.Color(t.Colors.Gray))

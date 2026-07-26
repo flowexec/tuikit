@@ -3,6 +3,7 @@ package io
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"charm.land/lipgloss/v2"
@@ -29,6 +30,15 @@ type StandardLogger struct {
 	outFile        *os.File
 	outWriter      *colorprofile.Writer // color-profile-aware writer for styled output
 	exitFunc       func(msg string, args ...any)
+
+	// modeMu guards the mode field. Std{Out,Err}Writer temporarily flip the mode on every
+	// write, so a command's stdout and stderr (copied by os/exec in separate goroutines) can
+	// read and write it concurrently. The underlying charm log handlers are internally
+	// synchronized; only this field needs protection.
+	modeMu sync.RWMutex
+	// writeMu serializes the Std{Out,Err}Writer flip/render/restore sequence so concurrent
+	// writers cannot interleave and render each other's output in the wrong mode.
+	writeMu sync.Mutex
 }
 
 type LoggerOptions func(*StandardLogger)
@@ -122,16 +132,32 @@ func (l *StandardLogger) SetMode(mode LogMode) {
 	if mode == "" {
 		return
 	}
+	l.modeMu.Lock()
 	l.mode = mode
+	l.modeMu.Unlock()
+	// applyHumanReadableFormat mutates the charm log handler, which is internally
+	// synchronized, so it is safe to call outside modeMu.
 	applyHumanReadableFormat(l.outHandler, l.theme, mode, l.outFile)
 }
 
 func (l *StandardLogger) LogMode() LogMode {
+	return l.currentMode()
+}
+
+// currentMode returns the active mode under a read lock, defaulting to Text when unset.
+func (l *StandardLogger) currentMode() LogMode {
+	l.modeMu.RLock()
+	defer l.modeMu.RUnlock()
 	if l.mode == "" {
 		return Text
 	}
 	return l.mode
 }
+
+// acquireWriteLock and releaseWriteLock let the Std{Out,Err}Writers serialize their
+// flip/render/restore sequence (see writeMu).
+func (l *StandardLogger) acquireWriteLock() { l.writeMu.Lock() }
+func (l *StandardLogger) releaseWriteLock() { l.writeMu.Unlock() }
 
 func applyHumanReadableFormat(handler *log.Logger, style themes.Theme, mode LogMode, out *os.File) {
 	handler.SetReportTimestamp(true)
@@ -193,7 +219,7 @@ func (l *StandardLogger) Println(data string) {
 
 func (l *StandardLogger) Infof(msg string, args ...any) {
 	l.syncLoggerFormat()
-	switch l.mode {
+	switch l.currentMode() {
 	case Text:
 		l.PlainTextInfo(safeSprintf(msg, args...))
 		return
@@ -209,7 +235,7 @@ func (l *StandardLogger) Infof(msg string, args ...any) {
 
 func (l *StandardLogger) Noticef(msg string, args ...any) {
 	l.syncLoggerFormat()
-	switch l.mode {
+	switch l.currentMode() {
 	case Text:
 		l.PlainTextNotice(safeSprintf(msg, args...))
 		return
@@ -225,7 +251,7 @@ func (l *StandardLogger) Noticef(msg string, args ...any) {
 
 func (l *StandardLogger) Debugf(msg string, args ...any) {
 	l.syncLoggerFormat()
-	switch l.mode {
+	switch l.currentMode() {
 	case Text:
 		l.PlainTextDebug(safeSprintf(msg, args...))
 		return
@@ -243,7 +269,7 @@ func (l *StandardLogger) WrapError(err error, msg string) {
 	if msg == "" {
 		l.Error(err.Error())
 		return
-	} else if l.mode == Hidden {
+	} else if l.currentMode() == Hidden {
 		return
 	}
 	l.Error(err.Error(), "err", err)
@@ -251,7 +277,7 @@ func (l *StandardLogger) WrapError(err error, msg string) {
 
 func (l *StandardLogger) Errorf(msg string, args ...any) {
 	l.syncLoggerFormat()
-	switch l.mode {
+	switch l.currentMode() {
 	case Text:
 		l.PlainTextError(safeSprintf(msg, args...))
 		return
@@ -267,7 +293,7 @@ func (l *StandardLogger) Errorf(msg string, args ...any) {
 
 func (l *StandardLogger) Warnf(msg string, args ...any) {
 	l.syncLoggerFormat()
-	switch l.mode {
+	switch l.currentMode() {
 	case Text:
 		l.PlainTextWarn(safeSprintf(msg, args...))
 		return
@@ -288,7 +314,7 @@ func (l *StandardLogger) FatalErr(err error) {
 func (l *StandardLogger) Fatalf(msg string, args ...any) {
 	l.syncLoggerFormat()
 	formatted := safeSprintf(msg, args...)
-	switch l.mode {
+	switch l.currentMode() {
 	case Text:
 		l.PlainTextError(formatted)
 		l.exitFunc(formatted)
@@ -305,7 +331,7 @@ func (l *StandardLogger) Fatalf(msg string, args ...any) {
 
 func (l *StandardLogger) Info(msg string, kv ...any) {
 	l.syncLoggerFormat()
-	if l.mode == Hidden {
+	if l.currentMode() == Hidden {
 		return
 	}
 	l.outHandler.Info(msg, kv...)
@@ -315,7 +341,7 @@ func (l *StandardLogger) Info(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) Notice(msg string, kv ...any) {
-	if l.mode == Hidden {
+	if l.currentMode() == Hidden {
 		return
 	}
 	l.syncLoggerFormat()
@@ -326,7 +352,7 @@ func (l *StandardLogger) Notice(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) Debug(msg string, kv ...any) {
-	if l.mode == Hidden {
+	if l.currentMode() == Hidden {
 		return
 	}
 	l.syncLoggerFormat()
@@ -337,7 +363,7 @@ func (l *StandardLogger) Debug(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) Error(msg string, kv ...any) {
-	if l.mode == Hidden {
+	if l.currentMode() == Hidden {
 		return
 	}
 	l.syncLoggerFormat()
@@ -348,7 +374,7 @@ func (l *StandardLogger) Error(msg string, kv ...any) {
 }
 
 func (l *StandardLogger) Warn(msg string, kv ...any) {
-	if l.mode == Hidden {
+	if l.currentMode() == Hidden {
 		return
 	}
 	l.syncLoggerFormat()
@@ -443,7 +469,7 @@ func (l *StandardLogger) Flush() error {
 }
 
 func (l *StandardLogger) syncLoggerFormat() {
-	switch l.mode {
+	switch l.currentMode() {
 	case JSON:
 		l.outHandler.SetFormatter(log.JSONFormatter)
 	case Logfmt, Text, "":
@@ -470,7 +496,7 @@ func defaultExit(_ string, _ ...any) {
 // --- TaskAwareLogger implementation ---
 
 func (l *StandardLogger) PrintWithTask(task *TaskContext, line string) {
-	if l.mode == Hidden {
+	if l.currentMode() == Hidden {
 		return
 	}
 	prefix := taskPrefix(task, l.theme.ColorPalette())
@@ -483,7 +509,7 @@ func (l *StandardLogger) PrintWithTask(task *TaskContext, line string) {
 }
 
 func (l *StandardLogger) PrintErrWithTask(task *TaskContext, line string) {
-	if l.mode == Hidden {
+	if l.currentMode() == Hidden {
 		return
 	}
 	prefix := taskPrefix(task, l.theme.ColorPalette())
@@ -497,7 +523,7 @@ func (l *StandardLogger) PrintErrWithTask(task *TaskContext, line string) {
 }
 
 func (l *StandardLogger) PrintTaskSummary(tasks []*TaskContext) {
-	if l.mode == Hidden || len(tasks) == 0 {
+	if l.currentMode() == Hidden || len(tasks) == 0 {
 		return
 	}
 

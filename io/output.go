@@ -5,6 +5,23 @@ import (
 	"strings"
 )
 
+// serializedLogger is implemented by loggers (e.g. StandardLogger) that can serialize the
+// writers' mode flip/render/restore sequence. When available, Std{Out,Err}Writer hold the
+// lock for the whole Write so a command's concurrently-copied stdout and stderr streams
+// cannot interleave and render each other's output in the wrong mode.
+type serializedLogger interface {
+	acquireWriteLock()
+	releaseWriteLock()
+}
+
+func serializeWrite(logger Logger) func() {
+	if sl, ok := logger.(serializedLogger); ok {
+		sl.acquireWriteLock()
+		return sl.releaseWriteLock
+	}
+	return func() {}
+}
+
 type StdOutWriter struct {
 	LogFields []any
 	Logger    Logger
@@ -13,13 +30,15 @@ type StdOutWriter struct {
 }
 
 func (w StdOutWriter) Write(p []byte) (n int, err error) {
+	defer serializeWrite(w.Logger)()
+
 	curMode := w.Logger.LogMode()
-	if w.LogMode != nil && (*w.LogMode != "" && *w.LogMode != curMode) {
+	flipped := w.LogMode != nil && *w.LogMode != "" && *w.LogMode != curMode
+	if flipped {
 		w.Logger.SetMode(*w.LogMode)
-		curMode = w.Logger.LogMode()
 	}
 	defer func() {
-		if w.LogMode != nil && *w.LogMode != curMode {
+		if flipped {
 			w.Logger.SetMode(curMode)
 		}
 	}()
@@ -55,12 +74,15 @@ type StdErrWriter struct {
 }
 
 func (w StdErrWriter) Write(p []byte) (n int, err error) {
+	defer serializeWrite(w.Logger)()
+
 	curMode := w.Logger.LogMode()
-	if w.LogMode != nil && (*w.LogMode != "" && *w.LogMode != curMode) {
+	flipped := w.LogMode != nil && *w.LogMode != "" && *w.LogMode != curMode
+	if flipped {
 		w.Logger.SetMode(*w.LogMode)
 	}
 	defer func() {
-		if w.LogMode != nil && *w.LogMode != curMode {
+		if flipped {
 			w.Logger.SetMode(curMode)
 		}
 	}()

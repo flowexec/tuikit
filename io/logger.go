@@ -39,6 +39,10 @@ type StandardLogger struct {
 	// writeMu serializes the Std{Out,Err}Writer flip/render/restore sequence so concurrent
 	// writers cannot interleave and render each other's output in the wrong mode.
 	writeMu sync.Mutex
+	// groupMu guards groupDepth, which tracks open GitHub Actions log groups so
+	// that nested or unbalanced Begin/EndGroup calls cannot emit invalid output.
+	groupMu    sync.Mutex
+	groupDepth int
 }
 
 type LoggerOptions func(*StandardLogger)
@@ -609,19 +613,41 @@ func (l *StandardLogger) archiveTaskSummary(tasks []*TaskContext) {
 }
 
 func (l *StandardLogger) BeginGroup(name string) {
-	if isCI() {
-		_, _ = fmt.Fprintf(l.outFile, "::group::%s\n", name)
-	} else {
-		palette := l.theme.ColorPalette()
-		style := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(palette.Secondary)).
-			Bold(true)
-		_, _ = fmt.Fprintf(l.outWriter, "\n%s\n", style.Render("--- "+name+" ---"))
+	if isGitHubActions() {
+		l.groupMu.Lock()
+		defer l.groupMu.Unlock()
+		// GitHub does not support nested groups: a second ::group:: before the
+		// first closes swallows the rest of the log. Track depth and emit only
+		// the outermost, so a nested caller degrades to no group rather than a
+		// broken one.
+		l.groupDepth++
+		if l.groupDepth == 1 {
+			_, _ = fmt.Fprintf(l.outFile, "::group::%s\n", escapeWorkflowData(name))
+		}
+		return
 	}
+
+	palette := l.theme.ColorPalette()
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(palette.Secondary)).
+		Bold(true)
+	_, _ = fmt.Fprintf(l.outWriter, "\n%s\n", style.Render("--- "+name+" ---"))
 }
 
 func (l *StandardLogger) EndGroup() {
-	if isCI() {
+	if !isGitHubActions() {
+		return
+	}
+
+	l.groupMu.Lock()
+	defer l.groupMu.Unlock()
+	// Without a matching BeginGroup there is nothing to close, and a stray
+	// ::endgroup:: would collapse whatever GitHub had open around it.
+	if l.groupDepth == 0 {
+		return
+	}
+	l.groupDepth--
+	if l.groupDepth == 0 {
 		_, _ = fmt.Fprintln(l.outFile, "::endgroup::")
 	}
 }

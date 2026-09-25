@@ -355,6 +355,19 @@ func (l *StandardLogger) Notice(msg string, kv ...any) {
 	}
 }
 
+// noticeStderr renders a command's stderr line like Notice, but archives it at info level
+// tagged stream=stderr: a command writing to stderr is not a failure of the run.
+func (l *StandardLogger) noticeStderr(msg string, kv ...any) {
+	if l.currentMode() == Hidden {
+		return
+	}
+	l.syncLoggerFormat()
+	l.outHandler.With().Log(themes.LogNoticeLevel, msg, kv...)
+	if l.archiveHandler != nil {
+		l.archiveHandler.Info(msg, append(kv[:len(kv):len(kv)], "stream", "stderr")...)
+	}
+}
+
 func (l *StandardLogger) Debug(msg string, kv ...any) {
 	if l.currentMode() == Hidden {
 		return
@@ -522,7 +535,7 @@ func (l *StandardLogger) PrintErrWithTask(task *TaskContext, line string) {
 	_, _ = fmt.Fprintln(l.outWriter, formatted)
 
 	if l.archiveHandler != nil {
-		l.archiveHandler.Error(line, "task", task.Name)
+		l.archiveHandler.Info(line, "task", task.Name, "stream", "stderr")
 	}
 }
 

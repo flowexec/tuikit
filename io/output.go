@@ -22,6 +22,20 @@ func serializeWrite(logger Logger) func() {
 	return func() {}
 }
 
+// stderrLogger is implemented by loggers (e.g. StandardLogger) that archive a command's
+// stderr separately from the logger's own errors. Other loggers fall back to Notice.
+type stderrLogger interface {
+	noticeStderr(msg string, kv ...any)
+}
+
+func noticeStderr(logger Logger, msg string, kv ...any) {
+	if sl, ok := logger.(stderrLogger); ok {
+		sl.noticeStderr(msg, kv...)
+		return
+	}
+	logger.Notice(msg, kv...)
+}
+
 type StdOutWriter struct {
 	LogFields []any
 	Logger    Logger
@@ -100,9 +114,9 @@ func (w StdErrWriter) Write(p []byte) (n int, err error) {
 				return len(p), nil
 			}
 		}
-		writeLines(p, func(line string) { w.Logger.Notice(line, w.LogFields...) })
+		writeLines(p, func(line string) { noticeStderr(w.Logger, line, w.LogFields...) })
 	case JSON:
-		writeLines(p, func(line string) { w.Logger.Notice(line, w.LogFields...) })
+		writeLines(p, func(line string) { noticeStderr(w.Logger, line, w.LogFields...) })
 	default:
 		return len(p), fmt.Errorf("unknown log mode %v", w.LogMode)
 	}

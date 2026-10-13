@@ -1,6 +1,5 @@
 # Terminal UI Kit 
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/flowexec/tuikit)](https://goreportcard.com/report/github.com/flowexec/tuikit)
 [![Go Reference](https://pkg.go.dev/badge/github.com/flowexec/tuikit.svg)](https://pkg.go.dev/github.com/flowexec/tuikit)
 [![GitHub release](https://img.shields.io/github/v/release/flowexec/tuikit)](https://github.com/flowexec/tuikit/releases)
 

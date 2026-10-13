@@ -330,15 +330,17 @@ func fieldsToHuhGroups(fields []*FormField) ([]*huh.Group, error) {
 	return hg, nil
 }
 
-// readPipedInput sets field values from non-interactive input, one line per field. A multiline field, or the
-// only field of a form, takes all remaining input so multi-line values are not truncated. Fields left without
-// input once it is exhausted are validated as empty, so required fields cannot be silently skipped.
+// readPipedInput sets field values from non-interactive input, one line per field. A multiline field, or a
+// masked field that is the only field of a form, takes all remaining input so multi-line values are not
+// truncated. Other fields read a single line, so a confirm prompt answered by `yes |` or a stdin that is never
+// closed does not block waiting for EOF. Fields left without input once it is exhausted are validated as empty,
+// so required fields cannot be silently skipped.
 func readPipedInput(in io.Reader, fields []*FormField) error {
 	reader := bufio.NewReader(in)
 	for _, field := range fields {
 		var line string
 		var err error
-		if field.Type == PromptTypeMultiline || len(fields) == 1 {
+		if field.Type == PromptTypeMultiline || (len(fields) == 1 && field.Type == PromptTypeMasked) {
 			var b []byte
 			b, err = io.ReadAll(reader)
 			line = string(b)

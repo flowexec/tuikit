@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/views"
@@ -137,5 +138,43 @@ func TestPipedShortInputUsesDefault(t *testing.T) {
 	}
 	if got := form.FindByKey("b").Value(); got != "fallback" {
 		t.Errorf("b = %q, want fallback", got)
+	}
+}
+
+// A single-line field must not wait for EOF, so a stdin that stays open (`yes |`, a parent process holding the
+// pipe) does not hang the prompt.
+func TestPipedSingleLineFieldDoesNotWaitForEOF(t *testing.T) {
+	for _, typ := range []views.FormFieldType{views.PromptTypeConfirm, views.PromptTypeText} {
+		r, w, err := os.Pipe()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.WriteString("yes\n"); err != nil {
+			t.Fatal(err)
+		}
+
+		done := make(chan *views.Form, 1)
+		go func() {
+			form, _ := views.NewForm(themes.EverforestTheme(), r, nil,
+				&views.FormField{Key: "v", Title: "V", Type: typ})
+			done <- form
+		}()
+		select {
+		case form := <-done:
+			if form == nil {
+				t.Fatalf("type %d: NewForm failed", typ)
+			}
+			want := "yes"
+			if typ == views.PromptTypeConfirm {
+				want = "true"
+			}
+			if got := form.FindByKey("v").Value(); got != want {
+				t.Errorf("type %d: value = %q, want %q", typ, got, want)
+			}
+		case <-time.After(2 * time.Second):
+			t.Errorf("type %d: NewForm blocked waiting for EOF on an open pipe", typ)
+		}
+		_ = w.Close()
+		_ = r.Close()
 	}
 }

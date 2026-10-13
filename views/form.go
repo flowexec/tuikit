@@ -23,6 +23,8 @@ import (
 type FormFieldType uint
 
 const FormViewType = "form"
+
+const maskedSummaryValue = "********"
 const (
 	PromptTypeText FormFieldType = iota
 	PromptTypeMasked
@@ -328,23 +330,42 @@ func fieldsToHuhGroups(fields []*FormField) ([]*huh.Group, error) {
 	return hg, nil
 }
 
-func readPipedInput(in *os.File, fields []*FormField) error {
+// readPipedInput sets field values from non-interactive input, one line per field. A multiline field, or the
+// only field of a form, takes all remaining input so multi-line values are not truncated. Fields left without
+// input once it is exhausted are validated as empty, so required fields cannot be silently skipped.
+func readPipedInput(in io.Reader, fields []*FormField) error {
 	reader := bufio.NewReader(in)
 	for _, field := range fields {
-		line, err := reader.ReadString('\n')
+		var line string
+		var err error
+		if field.Type == PromptTypeMultiline || len(fields) == 1 {
+			var b []byte
+			b, err = io.ReadAll(reader)
+			line = string(b)
+		} else {
+			line, err = reader.ReadString('\n')
+		}
 		if err != nil && !errors.Is(err, io.EOF) {
-			return fmt.Errorf("error reading input line: %w", err)
-		} else if line == "" && errors.Is(err, io.EOF) {
-			return nil
+			return fmt.Errorf("error reading input: %w", err)
 		}
 		if !field.Required && line == "" && field.Default != "" {
 			line = field.Default
 		}
-		if err := field.SetAndValidate(strings.TrimSpace(line)); err != nil {
+		if err := field.SetAndValidate(normalizePipedValue(line)); err != nil {
 			return fmt.Errorf("error setting field value: %w", err)
 		}
 	}
 	return nil
+}
+
+// normalizePipedValue trims surrounding whitespace from single-line input (e.g. the newline added by echo) but
+// keeps multi-line input byte for byte, since values such as PEM keys depend on it.
+func normalizePipedValue(val string) string {
+	trimmed := strings.TrimSpace(val)
+	if strings.Contains(trimmed, "\n") {
+		return val
+	}
+	return trimmed
 }
 
 func printFieldsSummary(out *os.File, fields []*FormField, styles themes.Theme) {
@@ -360,7 +381,12 @@ func printFieldsSummary(out *os.File, fields []*FormField, styles themes.Theme) 
 	}
 	for _, group := range groupedFields {
 		for _, field := range group {
-			_, _ = fmt.Fprintln(out, styles.RenderKeyAndValueWithBreak(field.Title, field.Value()))
+			value := field.Value()
+			if field.Type == PromptTypeMasked {
+				// Never echo a masked value, or its length.
+				value = maskedSummaryValue
+			}
+			_, _ = fmt.Fprintln(out, styles.RenderKeyAndValueWithBreak(field.Title, value))
 		}
 		_, _ = fmt.Fprintln(out)
 	}

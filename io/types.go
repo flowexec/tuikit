@@ -20,7 +20,7 @@ func (m LogMode) Validate() error {
 	}
 }
 
-//go:generate mockgen -destination=mocks/mock_logger.go -package=mocks . Logger
+//go:generate go tool mockgen -destination=mocks/mock_logger.go -package=mocks . Logger
 type Logger interface {
 	Flush() error
 	SetLevel(level int)

@@ -58,6 +58,10 @@ type Table struct {
 	// When nil, a default case-insensitive substring match on all cells is used.
 	FilterFunc func(query string, row []string) bool
 
+	// CopyFunc is an optional function that returns the text copied to the clipboard
+	// when "c" is pressed. When nil, the first column of the selected row is copied.
+	CopyFunc func(row []string) string
+
 	keyCallbacks []types.KeyCallback
 
 	showBorder      bool
@@ -113,8 +117,58 @@ func (t *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return t, t.handleFilterKeyMsg(msg)
 		}
 		return t, t.handleKeyMsg(msg)
+	case tea.MouseWheelMsg:
+		if d := wheelDelta(msg); d != 0 && !t.filtering {
+			t.moveCursor(d)
+		}
+	case tea.MouseClickMsg:
+		if msg.Button != tea.MouseLeft || t.filtering {
+			return t, nil
+		}
+		idx, ok := t.rowAt(msg.Y)
+		if !ok {
+			return t, nil
+		}
+		if idx == t.selectedIndex {
+			return t, pressEnter
+		}
+		t.moveCursor(idx - t.selectedIndex)
 	}
 	return t, nil
+}
+
+// rowAt returns the index of the visible row rendered at line y of the table view.
+func (t *Table) rowAt(y int) (int, bool) {
+	if t.render == nil || len(t.visibleRows) == 0 {
+		return 0, false
+	}
+	top := lipgloss.Height(t.renderHeader(t.calculateColumnWidths(t.calculateTableWidth())))
+	if t.displayMode == TableDisplayMini && t.showBorder {
+		top += tableMiniTopMargin + 2 // border + padding
+	}
+	if t.scrollOffset > 0 {
+		top++ // scroll hint
+	}
+	idx := t.scrollOffset + y - top
+	end := min(t.scrollOffset+t.maxVisibleRows(), len(t.visibleRows))
+	if y < top || idx >= end {
+		return 0, false
+	}
+	return idx, true
+}
+
+func (t *Table) copySelected() tea.Cmd {
+	row := t.GetSelectedRow()
+	if row == nil {
+		return nil
+	}
+	if t.CopyFunc != nil {
+		return copyToClipboard(t.CopyFunc(row.Data()))
+	}
+	if len(row.Data()) == 0 {
+		return nil
+	}
+	return copyToClipboard(ansi.Strip(row.Data()[0]))
 }
 
 func (t *Table) handleKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
@@ -142,6 +196,9 @@ func (t *Table) handleKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 				return nil
 			}
+		}
+		if msg.String() == types.KeyCopy {
+			return t.copySelected()
 		}
 	}
 	return nil
@@ -312,6 +369,7 @@ func (t *Table) HelpBindings() []themes.HelpKey {
 		{Key: "space/tab", Desc: "expand/collapse"},
 		{Key: "/", Desc: "filter"},
 	}
+	bindings = append(bindings, copyHelpKey(t.keyCallbacks)...)
 	for _, cb := range t.keyCallbacks {
 		bindings = append(bindings, themes.HelpKey{Key: cb.Key, Desc: cb.Label})
 	}

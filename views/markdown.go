@@ -56,6 +56,8 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			v.viewport.ScrollUp(1)
 		case types.KeyDown:
 			v.viewport.ScrollDown(1)
+		case types.KeyCopy:
+			return v, copyToClipboard(v.content)
 		}
 	}
 	var cmd tea.Cmd
@@ -97,6 +99,7 @@ func (v *MarkdownView) View() tea.View {
 func (v *MarkdownView) HelpBindings() []themes.HelpKey {
 	return []themes.HelpKey{
 		{Key: "↑/↓", Desc: "scroll"},
+		{Key: types.KeyCopy, Desc: "copy"},
 	}
 }
 

@@ -104,6 +104,9 @@ func (v *EntityView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			}
+			if msg.String() == types.KeyCopy && !hasCallback(v.callbacks, types.KeyCopy) {
+				return v, tea.Batch(cmd, v.copyContent())
+			}
 		}
 	}
 
@@ -158,6 +161,25 @@ func (v *EntityView) renderedView() tea.View {
 	return tea.View{Content: viewStr}
 }
 
+func (v *EntityView) copyContent() tea.Cmd {
+	var text string
+	var err error
+	//nolint:exhaustive
+	switch v.format {
+	case types.EntityFormatYAML:
+		text, err = v.entity.YAML()
+	case types.EntityFormatJSON:
+		text, err = v.entity.JSON()
+	default:
+		text = v.entity.Markdown()
+	}
+	if err != nil {
+		v.err = NewErrorView(err, v.styles)
+		return nil
+	}
+	return copyToClipboard(text)
+}
+
 func (v *EntityView) View() tea.View {
 	if v.err != nil {
 		return v.err.View()
@@ -182,6 +204,7 @@ func (v *EntityView) HelpBindings() []themes.HelpKey {
 		themes.HelpKey{Key: "y", Desc: "yaml"},
 		themes.HelpKey{Key: "j", Desc: "json"},
 	)
+	keys = append(keys, copyHelpKey(v.callbacks)...)
 	return keys
 }
 

@@ -23,6 +23,7 @@ type LogArchiveView struct {
 	cachedEntries []io.ArchiveEntry
 
 	model       *list.Model
+	delegate    list.ItemDelegate
 	items       []list.Item
 	activeEntry *io.ArchiveEntry
 	err         *ErrorView
@@ -60,6 +61,7 @@ func NewLogArchiveView(state *types.RenderState, archiveDir string, lastEntry bo
 		cachedEntries: entries,
 		activeEntry:   lastEntryFile,
 		model:         &model,
+		delegate:      delegate,
 		items:         items,
 		width:         state.ContentWidth,
 		height:        state.ContentHeight,
@@ -86,6 +88,8 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			time.Sleep(time.Second)
 			return v, tea.Quit
 		}
+	case tea.MouseMsg:
+		return v, v.handleMouse(msg)
 	case tea.KeyPressMsg:
 		// When the filter input is active, pass all keys through to the list.
 		if v.model.FilterState() == list.Filtering {
@@ -129,6 +133,8 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			v.model.SetItems(v.items)
+		case types.KeyCopy:
+			return v, v.copyPath()
 		case types.KeyEsc, types.KeyBackspace:
 			if v.activeEntry != nil {
 				v.activeEntry = nil
@@ -154,6 +160,38 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	model, cmd := v.model.Update(msg)
 	v.model = &model
 	return v, cmd
+}
+
+func (v *LogArchiveView) handleMouse(msg tea.MouseMsg) tea.Cmd {
+	if v.activeEntry != nil || v.model.FilterState() == list.Filtering {
+		return nil
+	}
+	switch msg := msg.(type) {
+	case tea.MouseWheelMsg:
+		scrollList(v.model, wheelDelta(msg))
+	case tea.MouseClickMsg:
+		if msg.Button == tea.MouseLeft {
+			return clickListItem(v.model, v.delegate, msg.Y-styleTopOffset(v.styles.BoxStyle()))
+		}
+	}
+	return nil
+}
+
+// copyPath copies the file path of the open or selected log entry.
+func (v *LogArchiveView) copyPath() tea.Cmd {
+	if v.activeEntry != nil {
+		return copyToClipboard(v.activeEntry.Path)
+	}
+	selected := v.model.SelectedItem()
+	if selected == nil {
+		return nil
+	}
+	for _, entry := range v.cachedEntries {
+		if entry.FilterValue() == selected.FilterValue() {
+			return copyToClipboard(entry.Path)
+		}
+	}
+	return nil
 }
 
 func (v *LogArchiveView) View() tea.View {
@@ -193,6 +231,7 @@ func (v *LogArchiveView) HelpBindings() []themes.HelpKey {
 		{Key: "/", Desc: "filter"},
 		{Key: "d", Desc: "delete selected"},
 		{Key: "x", Desc: "delete all"},
+		{Key: types.KeyCopy, Desc: "copy path"},
 	}
 }
 

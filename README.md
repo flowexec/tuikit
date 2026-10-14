@@ -53,4 +53,7 @@ func main() {
 }
 ```
 
+To scroll views with the mouse wheel, pass `tuikit.WithMouse()` to `NewContainer`. It's off by default because,
+while it's enabled, most terminals need you to hold Shift (Option on iTerm2) to select text.
+
 Also see the [sample app](sample/main.go) for examples of how different views can be used.

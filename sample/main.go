@@ -23,7 +23,7 @@ func main() {
 	ctx := context.Background()
 	app := &tuikit.Application{Name: "tuikit-sample", Version: "v1"}
 
-	container, err := tuikit.NewContainer(ctx, app)
+	container, err := tuikit.NewContainer(ctx, app, tuikit.WithMouse())
 	if err != nil {
 		panic(err)
 	}

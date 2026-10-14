@@ -86,6 +86,11 @@ func (v *LogArchiveView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			time.Sleep(time.Second)
 			return v, tea.Quit
 		}
+	case tea.MouseWheelMsg:
+		if v.activeEntry == nil && v.model.FilterState() != list.Filtering {
+			scrollList(v.model, wheelDelta(msg))
+		}
+		return v, nil
 	case tea.KeyPressMsg:
 		// When the filter input is active, pass all keys through to the list.
 		if v.model.FilterState() == list.Filtering {

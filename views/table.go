@@ -113,6 +113,10 @@ func (t *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return t, t.handleFilterKeyMsg(msg)
 		}
 		return t, t.handleKeyMsg(msg)
+	case tea.MouseWheelMsg:
+		if d := wheelDelta(msg); d != 0 && !t.filtering {
+			t.moveCursor(d)
+		}
 	}
 	return t, nil
 }

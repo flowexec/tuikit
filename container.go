@@ -52,6 +52,7 @@ type Container struct {
 	help                  *overlay.HelpPopup
 	toasts                *overlay.ToastManager
 	finalizing            *chan struct{}
+	mouseEnabled          bool
 
 	viewMu  sync.RWMutex
 	stateMu sync.RWMutex
@@ -285,7 +286,7 @@ func (c *Container) View() tea.View {
 		return tea.NewView("")
 	}
 	if c.CurrentView().Type() == views.FrameViewType {
-		return c.CurrentView().View()
+		return c.withMouseMode(c.CurrentView().View())
 	}
 
 	header := c.render.Theme.RenderHeader(c.app.Name, c.app.Version, c.app.stateKey, c.app.stateVal, c.render.Width)
@@ -295,7 +296,7 @@ func (c *Container) View() tea.View {
 	if !c.help.Visible() && c.toasts.Empty() {
 		v := tea.NewView(base)
 		v.WindowTitle = c.app.Name
-		return v
+		return c.withMouseMode(v)
 	}
 
 	// Overlay path: compose layers.
@@ -323,6 +324,13 @@ func (c *Container) View() tea.View {
 	comp := lipgloss.NewCompositor(baseLayer)
 	v := tea.NewView(comp.Render())
 	v.WindowTitle = c.app.Name
+	return c.withMouseMode(v)
+}
+
+func (c *Container) withMouseMode(v tea.View) tea.View {
+	if c.mouseEnabled {
+		v.MouseMode = tea.MouseModeCellMotion
+	}
 	return v
 }
 
@@ -549,5 +557,13 @@ func WithTheme(theme themes.Theme) ContainerOptions {
 			c.render = &types.RenderState{}
 		}
 		c.render.Theme = theme
+	}
+}
+
+// WithMouse enables mouse reporting so views can respond to the scroll wheel.
+// While enabled, most terminals require holding Shift (Option on iTerm2) to select text.
+func WithMouse() ContainerOptions {
+	return func(c *Container) {
+		c.mouseEnabled = true
 	}
 }

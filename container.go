@@ -208,6 +208,11 @@ func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		fwdMsg, cmds = c.updateKeyFwdMsg(msg, fwdMsg, cmds)
 	case types.ToastDismissMsg:
 		c.toasts.Dismiss(msg.ID)
+	case types.ToastMsg:
+		cmds = append(cmds, c.toasts.Push(msg.Text, msg.Level))
+		fwdMsg = nil
+	case tea.MouseMsg:
+		fwdMsg = c.translateMouse(msg)
 	case types.TickMsg:
 		if c.Ready() && c.CurrentView().Type() == views.LoadingViewType && c.nextView != nil {
 			c.currentView = c.nextView
@@ -249,6 +254,24 @@ func (c *Container) handleKeyPress(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, boo
 		return c, nil, true
 	}
 	return c, nil, false
+}
+
+// translateMouse converts a mouse event into the current view's coordinate space,
+// returning nil when the event should not reach the view.
+func (c *Container) translateMouse(msg tea.MouseMsg) tea.Msg {
+	if c.help.Visible() {
+		if _, ok := msg.(tea.MouseClickMsg); ok {
+			c.help.Toggle()
+		}
+		return nil
+	}
+	if c.CurrentView().Type() == views.FrameViewType {
+		return msg
+	}
+	if msg.Mouse().Y < themes.HeaderHeight {
+		return nil
+	}
+	return types.OffsetMouse(msg, 0, themes.HeaderHeight)
 }
 
 // updateKeyFwdMsg decides how a key press should be forwarded to the current view.

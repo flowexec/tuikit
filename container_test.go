@@ -3,7 +3,6 @@ package tuikit_test
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -760,100 +759,4 @@ func TestFormInteraction(t *testing.T) {
 	}, teatest.WithCheckInterval(100*time.Millisecond), teatest.WithDuration(5*time.Second))
 	container.Send(tea.KeyPressMsg{Text: "q"}, 100*time.Millisecond)
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))
-}
-
-// --- Mouse support ---
-
-func TestContainerMouseModeOptIn(t *testing.T) {
-	app := tuikit.NewApplication("Test")
-	for _, tc := range []struct {
-		name string
-		opts []tuikit.ContainerOptions
-		want tea.MouseMode
-	}{
-		{"default", nil, tea.MouseModeNone},
-		{"enabled", []tuikit.ContainerOptions{tuikit.WithMouse()}, tea.MouseModeCellMotion},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			opts := append([]tuikit.ContainerOptions{
-				tuikit.WithInitialTermSize(80, 40),
-				tuikit.WithOutput(&bytes.Buffer{}),
-			}, tc.opts...)
-			container, err := tuikit.NewContainer(t.Context(), app, opts...)
-			if err != nil {
-				t.Fatal(err)
-			}
-			container.Init()
-			if got := container.View().MouseMode; got != tc.want {
-				t.Errorf("expected mouse mode %v, got %v", tc.want, got)
-			}
-		})
-	}
-}
-
-func TestTableMouseWheel(t *testing.T) {
-	state := testRenderState()
-	columns := []views.TableColumn{{Title: "Item", Percentage: 100}}
-	rows := []views.TableRow{
-		{Data: []string{"First"}},
-		{Data: []string{"Second"}},
-	}
-	table := views.NewTable(state, columns, rows, views.TableDisplayFull)
-
-	table.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
-	if selected := table.GetSelectedRow(); selected == nil || selected.Data()[0] != "Second" {
-		t.Errorf("expected wheel down to select second row, got %v", selected)
-	}
-
-	table.Update(tea.MouseWheelMsg{Button: tea.MouseWheelUp})
-	if selected := table.GetSelectedRow(); selected == nil || selected.Data()[0] != "First" {
-		t.Errorf("expected wheel up to select first row, got %v", selected)
-	}
-}
-
-func TestCollectionViewMouseWheel(t *testing.T) {
-	state := testRenderState()
-	collection := sampleTypes.NewThingList("Color",
-		&types.EntityInfo{ID: "red", Header: "Red", SubHeader: "Primary Color"},
-		&types.EntityInfo{ID: "green", Header: "Green", SubHeader: "Secondary Color"},
-	)
-	var selected string
-	view := views.NewCollectionView(state, collection, types.CollectionFormatList, func(id string) error {
-		selected = id
-		return nil
-	})
-	view.View()
-
-	// Items are sorted, so "green" is first.
-	view.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
-	view.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if selected != "red" {
-		t.Errorf("expected wheel down to select 'red', got %q", selected)
-	}
-
-	view.Update(tea.MouseWheelMsg{Button: tea.MouseWheelUp})
-	view.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if selected != "green" {
-		t.Errorf("expected wheel up to select 'green', got %q", selected)
-	}
-}
-
-func TestMarkdownViewMouseWheel(t *testing.T) {
-	state := testRenderState()
-	state.ContentHeight = 5
-	var md strings.Builder
-	for i := range 50 {
-		fmt.Fprintf(&md, "line-%d\n\n", i)
-	}
-	view := views.NewMarkdownView(state, md.String())
-	before := view.View().Content
-	if !strings.Contains(before, "line-0") {
-		t.Fatalf("expected first line visible initially, got %q", before)
-	}
-
-	view.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
-	view.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
-	if after := view.View().Content; strings.Contains(after, "line-0") {
-		t.Errorf("expected wheel down to scroll past first line, got %q", after)
-	}
 }

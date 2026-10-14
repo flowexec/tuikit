@@ -5,6 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -15,6 +16,11 @@ const LibraryViewType = "library"
 // breadcrumbHeight is the number of lines reserved for the breadcrumb bar
 // (1 line of text + 1 line of bottom margin).
 const breadcrumbHeight = 2
+
+const (
+	breadcrumbMargin = 2
+	breadcrumbSep    = " › "
+)
 
 // Selectable is an optional interface sub-views can implement to report
 // the current selection. The Library uses this when navigating forward
@@ -88,10 +94,42 @@ func (l *Library) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return l, cmd
 	case tea.KeyPressMsg:
 		return l, l.handleKeyMsg(msg)
+	case tea.MouseMsg:
+		return l, l.handleMouseMsg(msg)
 	}
 
 	_, cmd := l.activeView.Update(msg)
 	return l, cmd
+}
+
+func (l *Library) handleMouseMsg(msg tea.MouseMsg) tea.Cmd {
+	if msg.Mouse().Y >= breadcrumbHeight {
+		_, cmd := l.activeView.Update(types.OffsetMouse(msg, 0, breadcrumbHeight))
+		return cmd
+	}
+	click, ok := msg.(tea.MouseClickMsg)
+	if !ok || click.Button != tea.MouseLeft || click.Y != 0 || l.CapturingInput() {
+		return nil
+	}
+	page, ok := l.breadcrumbAt(click.X)
+	if !ok || page >= l.pageIndex {
+		return nil
+	}
+	l.activatePage(page)
+	return l.activeView.Init()
+}
+
+// breadcrumbAt returns the page index of the breadcrumb rendered at column x.
+func (l *Library) breadcrumbAt(x int) (int, bool) {
+	pos := breadcrumbMargin
+	for i, b := range l.breadcrumbs {
+		w := ansi.StringWidth(b)
+		if x >= pos && x < pos+w {
+			return i, true
+		}
+		pos += w + ansi.StringWidth(breadcrumbSep)
+	}
+	return 0, false
 }
 
 func (l *Library) handleKeyMsg(msg tea.KeyPressMsg) tea.Cmd {
@@ -296,7 +334,7 @@ func (l *Library) renderBreadcrumb() string {
 		}
 	}
 
-	sep := lipgloss.NewStyle().Foreground(cp.BorderColor()).Render(" › ")
+	sep := lipgloss.NewStyle().Foreground(cp.BorderColor()).Render(breadcrumbSep)
 	trail := strings.Join(parts, sep)
-	return lipgloss.NewStyle().MarginLeft(2).MarginBottom(1).Render(trail)
+	return lipgloss.NewStyle().MarginLeft(breadcrumbMargin).MarginBottom(1).Render(trail)
 }

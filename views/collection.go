@@ -15,9 +15,10 @@ import (
 type CollectionView struct {
 	collection types.Collection
 
-	model *list.Model
-	items []list.Item
-	err   *ErrorView
+	model    *list.Model
+	delegate list.ItemDelegate
+	items    []list.Item
+	err      *ErrorView
 
 	format        types.Format
 	width, height int
@@ -65,6 +66,7 @@ func NewCollectionView(
 	return &CollectionView{
 		collection:   collection,
 		model:        &model,
+		delegate:     delegate,
 		items:        items,
 		format:       format,
 		width:        state.ContentWidth,
@@ -90,11 +92,8 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		v.width = msg.ContentWidth
 		v.height = msg.ContentHeight
 		v.model.SetSize(v.width, v.height)
-	case tea.MouseWheelMsg:
-		if v.format == types.CollectionFormatList && v.model.FilterState() != list.Filtering {
-			scrollList(v.model, wheelDelta(msg))
-		}
-		return v, nil
+	case tea.MouseMsg:
+		return v, v.handleMouse(msg)
 	case tea.KeyPressMsg:
 		// When the filter input is active, pass all keys through to the list.
 		if v.model.FilterState() == list.Filtering {
@@ -143,12 +142,51 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return v, nil
 				}
 			}
+			if msg.String() == types.KeyCopy {
+				return v, v.copySelection()
+			}
 		}
 	}
 
 	model, cmd := v.model.Update(msg)
 	v.model = &model
 	return v, cmd
+}
+
+func (v *CollectionView) handleMouse(msg tea.MouseMsg) tea.Cmd {
+	if v.format != types.CollectionFormatList || v.model.FilterState() == list.Filtering {
+		return nil
+	}
+	switch msg := msg.(type) {
+	case tea.MouseWheelMsg:
+		scrollList(v.model, wheelDelta(msg))
+	case tea.MouseClickMsg:
+		if msg.Button == tea.MouseLeft {
+			return clickListItem(v.model, v.delegate, msg.Y-styleTopOffset(v.styles.CollectionStyle()))
+		}
+	}
+	return nil
+}
+
+func (v *CollectionView) copySelection() tea.Cmd {
+	var text string
+	var err error
+	//nolint:exhaustive
+	switch v.format {
+	case types.CollectionFormatYAML:
+		text, err = v.collection.YAML()
+	case types.CollectionFormatJSON:
+		text, err = v.collection.JSON()
+	default:
+		if selected := v.model.SelectedItem(); selected != nil {
+			text = selected.FilterValue()
+		}
+	}
+	if err != nil {
+		v.err = NewErrorView(err, v.styles)
+		return nil
+	}
+	return copyToClipboard(text)
 }
 
 func (v *CollectionView) UpdateItemsFromCollections() {
@@ -250,6 +288,7 @@ func (v *CollectionView) HelpBindings() []themes.HelpKey {
 		themes.HelpKey{Key: "y", Desc: "yaml"},
 		themes.HelpKey{Key: "j", Desc: "json"},
 	)
+	keys = append(keys, copyHelpKey(v.callbacks)...)
 	return keys
 }
 

@@ -526,3 +526,36 @@ func hasCopyHelpKey(keys []themes.HelpKey) bool {
 	}
 	return false
 }
+
+func TestCollectionViewStructuredFormatsScroll(t *testing.T) {
+	state := testRenderState()
+	state.ContentHeight = 6
+	items := make([]*types.EntityInfo, 30)
+	for i := range items {
+		items[i] = &types.EntityInfo{ID: fmt.Sprintf("item-%02d", i), Header: fmt.Sprintf("Item %02d", i)}
+	}
+	view := views.NewCollectionView(state, sampleTypes.NewThingList("Thing", items...), types.CollectionFormatYAML, nil)
+	if !strings.Contains(view.View().Content, "item-00") {
+		t.Fatal("expected first item visible initially")
+	}
+
+	view.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
+	view.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
+	if strings.Contains(view.View().Content, "item-00") {
+		t.Error("expected wheel to scroll YAML past the first item")
+	}
+
+	view.Update(pressKey("j"))
+	if !strings.Contains(view.View().Content, "item-00") {
+		t.Error("expected switching formats to reset the scroll position")
+	}
+	for range 8 {
+		view.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	if strings.Contains(view.View().Content, "item-00") {
+		t.Error("expected down arrow to scroll JSON past the first item")
+	}
+	if lines := strings.Count(view.View().Content, "\n") + 1; lines > state.ContentHeight {
+		t.Errorf("expected output to fit %d lines, got %d", state.ContentHeight, lines)
+	}
+}

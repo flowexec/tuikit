@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/glamour/v2"
 
@@ -19,6 +20,9 @@ type CollectionView struct {
 	delegate list.ItemDelegate
 	items    []list.Item
 	err      *ErrorView
+
+	// viewport scrolls the YAML and JSON formats.
+	viewport viewport.Model
 
 	format        types.Format
 	width, height int
@@ -68,6 +72,7 @@ func NewCollectionView(
 		model:        &model,
 		delegate:     delegate,
 		items:        items,
+		viewport:     viewport.New(viewport.WithWidth(state.ContentWidth), viewport.WithHeight(state.ContentHeight)),
 		format:       format,
 		width:        state.ContentWidth,
 		height:       state.ContentHeight,
@@ -101,20 +106,14 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch msg.String() {
 		case "-", "l":
-			if v.format == types.CollectionFormatList {
-				return v, nil
-			}
-			v.format = types.CollectionFormatList
+			v.setFormat(types.CollectionFormatList)
+			return v, nil
 		case "y":
-			if v.format == types.CollectionFormatYAML {
-				return v, nil
-			}
-			v.format = types.CollectionFormatYAML
+			v.setFormat(types.CollectionFormatYAML)
+			return v, nil
 		case "j":
-			if v.format == types.CollectionFormatJSON {
-				return v, nil
-			}
-			v.format = types.CollectionFormatJSON
+			v.setFormat(types.CollectionFormatJSON)
+			return v, nil
 		case types.KeyEsc, types.KeyBackspace:
 			if v.format != types.CollectionFormatList {
 				v.format = types.CollectionFormatList
@@ -148,13 +147,31 @@ func (v *CollectionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	if v.format != types.CollectionFormatList {
+		var cmd tea.Cmd
+		v.viewport, cmd = v.viewport.Update(msg)
+		return v, cmd
+	}
 	model, cmd := v.model.Update(msg)
 	v.model = &model
 	return v, cmd
 }
 
+func (v *CollectionView) setFormat(format types.Format) {
+	if v.format == format {
+		return
+	}
+	v.format = format
+	v.viewport.GotoTop()
+}
+
 func (v *CollectionView) handleMouse(msg tea.MouseMsg) tea.Cmd {
-	if v.format != types.CollectionFormatList || v.model.FilterState() == list.Filtering {
+	if v.format != types.CollectionFormatList {
+		var cmd tea.Cmd
+		v.viewport, cmd = v.viewport.Update(msg)
+		return cmd
+	}
+	if v.model.FilterState() == list.Filtering {
 		return nil
 	}
 	switch msg := msg.(type) {
@@ -258,7 +275,10 @@ func (v *CollectionView) renderedView() tea.View {
 		v.err = NewErrorView(err, v.styles)
 		return v.err.View()
 	}
-	return tea.View{Content: viewStr}
+	v.viewport.SetWidth(v.width)
+	v.viewport.SetHeight(v.height)
+	v.viewport.SetContent(viewStr)
+	return tea.View{Content: v.viewport.View()}
 }
 
 func (v *CollectionView) View() tea.View {
@@ -288,6 +308,9 @@ func (v *CollectionView) HelpBindings() []themes.HelpKey {
 		themes.HelpKey{Key: "y", Desc: "yaml"},
 		themes.HelpKey{Key: "j", Desc: "json"},
 	)
+	if v.format != types.CollectionFormatList {
+		keys = append(keys, themes.HelpKey{Key: "↑/↓/pgup/pgdn", Desc: "scroll"})
+	}
 	keys = append(keys, copyHelpKey(v.callbacks)...)
 	return keys
 }

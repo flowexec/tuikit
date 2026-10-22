@@ -6,6 +6,7 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/flowexec/tuikit/themes"
 	"github.com/flowexec/tuikit/types"
@@ -86,6 +87,9 @@ func (v *DetailView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return v, func() tea.Msg { return nil }
 				}
 			}
+			if msg.String() == types.KeyCopy {
+				return v, copyToClipboard(ansi.Strip(v.body))
+			}
 		}
 	}
 
@@ -122,6 +126,7 @@ func (v *DetailView) HelpBindings() []themes.HelpKey {
 		themes.HelpKey{Key: "u/d", Desc: "half-page"},
 		themes.HelpKey{Key: "g/G", Desc: "top/bottom"},
 	)
+	keys = append(keys, copyHelpKey(v.callbacks)...)
 	return keys
 }
 

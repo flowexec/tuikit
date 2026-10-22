@@ -25,6 +25,9 @@ type DetailContentOpts struct {
 	Body     string        // markdown rendered via glamour
 	Footer   string        // faint footer line (e.g. file path)
 	Entity   types.Entity  // optional: enables y/j/d format switching
+	// CopyValue is the text copied by "c" in the detail format. Defaults to Title.
+	// In the YAML and JSON formats, the raw entity is copied.
+	CopyValue string
 }
 
 // DetailContentView combines a lipgloss-styled header and metadata section
@@ -82,6 +85,9 @@ func (v *DetailContentView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		v.theme = msg.Theme
 		v.syncViewport()
 	case tea.KeyPressMsg:
+		if msg.String() == types.KeyCopy && !hasCallback(v.callbacks, types.KeyCopy) {
+			return v, v.copyContent()
+		}
 		if v.handleKeyPress(msg) {
 			return v, nil
 		}
@@ -90,6 +96,26 @@ func (v *DetailContentView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	v.viewport, cmd = v.viewport.Update(msg)
 	return v, cmd
+}
+
+func (v *DetailContentView) copyContent() tea.Cmd {
+	var text string
+	var err error
+	switch {
+	case v.opts.Entity != nil && v.format == types.EntityFormatYAML:
+		text, err = v.opts.Entity.YAML()
+	case v.opts.Entity != nil && v.format == types.EntityFormatJSON:
+		text, err = v.opts.Entity.JSON()
+	case v.opts.CopyValue != "":
+		text = v.opts.CopyValue
+	default:
+		text = v.opts.Title
+	}
+	if err != nil {
+		v.err = NewErrorView(err, v.theme)
+		return nil
+	}
+	return copyToClipboard(text)
 }
 
 func (v *DetailContentView) handleKeyPress(msg tea.KeyPressMsg) bool {
@@ -193,6 +219,7 @@ func (v *DetailContentView) HelpBindings() []themes.HelpKey {
 		}
 	}
 	keys = append(keys, themes.HelpKey{Key: "↑/↓", Desc: "scroll"})
+	keys = append(keys, copyHelpKey(v.callbacks)...)
 	if v.opts.Entity != nil {
 		keys = append(keys,
 			themes.HelpKey{Key: "d", Desc: "detail"},

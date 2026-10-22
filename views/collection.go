@@ -203,7 +203,7 @@ func (v *CollectionView) copySelection() tea.Cmd {
 		v.err = NewErrorView(err, v.styles)
 		return nil
 	}
-	return copyToClipboard(text)
+	return CopyToClipboard(text)
 }
 
 func (v *CollectionView) UpdateItemsFromCollections() {

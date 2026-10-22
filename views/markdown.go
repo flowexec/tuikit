@@ -57,7 +57,7 @@ func (v *MarkdownView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case types.KeyDown:
 			v.viewport.ScrollDown(1)
 		case types.KeyCopy:
-			return v, copyToClipboard(v.content)
+			return v, CopyToClipboard(v.content)
 		}
 	}
 	var cmd tea.Cmd

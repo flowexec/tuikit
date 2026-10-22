@@ -88,7 +88,7 @@ func (v *DetailView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			if msg.String() == types.KeyCopy {
-				return v, copyToClipboard(ansi.Strip(v.body))
+				return v, CopyToClipboard(ansi.Strip(v.body))
 			}
 		}
 	}

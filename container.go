@@ -522,6 +522,14 @@ func (c *Container) SetNotice(notice string, lvl themes.OutputLevel) {
 	}
 }
 
+// CopyToClipboard copies text to the clipboard and shows a "Copied" toast, the same way the
+// built-in copy key does. Use it from a types.KeyCallback, which cannot return a command.
+func (c *Container) CopyToClipboard(text string) {
+	if cmd := views.CopyToClipboard(text); cmd != nil {
+		c.Send(cmd, 0)
+	}
+}
+
 func (c *Container) SetState(key, val string) {
 	c.app.stateKey = key
 	c.app.stateVal = val

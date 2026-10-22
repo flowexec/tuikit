@@ -180,7 +180,7 @@ func (v *LogArchiveView) handleMouse(msg tea.MouseMsg) tea.Cmd {
 // copyPath copies the file path of the open or selected log entry.
 func (v *LogArchiveView) copyPath() tea.Cmd {
 	if v.activeEntry != nil {
-		return copyToClipboard(v.activeEntry.Path)
+		return CopyToClipboard(v.activeEntry.Path)
 	}
 	selected := v.model.SelectedItem()
 	if selected == nil {
@@ -188,7 +188,7 @@ func (v *LogArchiveView) copyPath() tea.Cmd {
 	}
 	for _, entry := range v.cachedEntries {
 		if entry.FilterValue() == selected.FilterValue() {
-			return copyToClipboard(entry.Path)
+			return CopyToClipboard(entry.Path)
 		}
 	}
 	return nil

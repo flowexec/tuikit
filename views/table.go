@@ -163,12 +163,12 @@ func (t *Table) copySelected() tea.Cmd {
 		return nil
 	}
 	if t.CopyFunc != nil {
-		return copyToClipboard(t.CopyFunc(row.Data()))
+		return CopyToClipboard(t.CopyFunc(row.Data()))
 	}
 	if len(row.Data()) == 0 {
 		return nil
 	}
-	return copyToClipboard(ansi.Strip(row.Data()[0]))
+	return CopyToClipboard(ansi.Strip(row.Data()[0]))
 }
 
 func (t *Table) handleKeyMsg(msg tea.KeyPressMsg) tea.Cmd {

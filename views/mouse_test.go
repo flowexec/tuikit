@@ -331,6 +331,44 @@ func TestCopyKeyCallbackOverride(t *testing.T) {
 	}
 }
 
+func TestCopyToClipboardWritesNativeAndOSC52(t *testing.T) {
+	var native string
+	restore := views.SetNativeClipboardForTest(func(text string) error {
+		native = text
+		return nil
+	})
+	defer restore()
+
+	cmd := views.CopyToClipboard("flow exec widget")
+	if got := copyToast(t, cmd); got != "Copied flow exec widget" {
+		t.Errorf("unexpected toast: %q", got)
+	}
+	if native != "flow exec widget" {
+		t.Errorf("expected native clipboard write, got %q", native)
+	}
+	if got := clipboardText(cmd); !strings.Contains(got, "flow exec widget") {
+		t.Errorf("expected OSC 52 clipboard message, got %q", got)
+	}
+}
+
+func TestCopyToClipboardNativeFailure(t *testing.T) {
+	restore := views.SetNativeClipboardForTest(func(string) error {
+		return fmt.Errorf("no clipboard utilities available")
+	})
+	defer restore()
+
+	// The OSC 52 copy still applies without a native clipboard, so the toast still shows.
+	if got := copyToast(t, views.CopyToClipboard("widget")); got != "Copied widget" {
+		t.Errorf("unexpected toast: %q", got)
+	}
+}
+
+func TestCopyToClipboardEmpty(t *testing.T) {
+	if views.CopyToClipboard("") != nil {
+		t.Error("expected no command for empty text")
+	}
+}
+
 // copyToast returns the text of the toast produced by a copy command.
 func copyToast(t *testing.T, cmd tea.Cmd) string {
 	t.Helper()

@@ -64,6 +64,8 @@ Pass `tuikit.WithMouse()` to `NewContainer` to enable mouse support:
 Mouse support is off by default because, while it's enabled, most terminals need you to hold Shift
 (Option on iTerm2) to select text. To make copying easy either way, views copy the selected item or
 displayed content to the clipboard when `c` is pressed (unless a view's key callback uses `c`). Copying
-uses OSC 52, which most modern terminals support; tmux needs `set -g set-clipboard on`.
+writes both the native system clipboard and OSC 52, so it works in terminals that ignore OSC 52
+(such as macOS Terminal) and over SSH; tmux needs `set -g set-clipboard on` for the OSC 52 path. Key
+callbacks can copy the same way with `Container.CopyToClipboard`.
 
 Also see the [sample app](sample/main.go) for examples of how different views can be used.

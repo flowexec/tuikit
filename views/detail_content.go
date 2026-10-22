@@ -115,7 +115,7 @@ func (v *DetailContentView) copyContent() tea.Cmd {
 		v.err = NewErrorView(err, v.theme)
 		return nil
 	}
-	return copyToClipboard(text)
+	return CopyToClipboard(text)
 }
 
 func (v *DetailContentView) handleKeyPress(msg tea.KeyPressMsg) bool {

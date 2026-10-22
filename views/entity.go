@@ -177,7 +177,7 @@ func (v *EntityView) copyContent() tea.Cmd {
 		v.err = NewErrorView(err, v.styles)
 		return nil
 	}
-	return copyToClipboard(text)
+	return CopyToClipboard(text)
 }
 
 func (v *EntityView) View() tea.View {

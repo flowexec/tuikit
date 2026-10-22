@@ -9,6 +9,7 @@ import (
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/flowexec/tuikit/themes"
@@ -45,8 +46,14 @@ func pressEnter() tea.Msg {
 	return tea.KeyPressMsg{Code: tea.KeyEnter}
 }
 
-// copyToClipboard copies text to the system clipboard using OSC 52 and confirms with a toast.
-func copyToClipboard(text string) tea.Cmd {
+// writeNativeClipboard writes to the local system clipboard. It is a variable so tests do not
+// touch the real clipboard.
+var writeNativeClipboard = clipboard.WriteAll
+
+// CopyToClipboard returns a command that copies text to the clipboard and confirms with a toast.
+// It writes both the native system clipboard and an OSC 52 escape: some local terminals, such as
+// macOS Terminal, ignore OSC 52, while over SSH only OSC 52 reaches the user's machine.
+func CopyToClipboard(text string) tea.Cmd {
 	if text == "" {
 		return nil
 	}
@@ -55,6 +62,9 @@ func copyToClipboard(text string) tea.Cmd {
 	return tea.Batch(
 		tea.SetClipboard(text),
 		func() tea.Msg {
+			// A failure is expected where there is no native clipboard (e.g. a headless
+			// SSH host); the OSC 52 copy still applies there.
+			_ = writeNativeClipboard(text)
 			return types.ToastMsg{Text: "Copied " + preview, Level: themes.OutputLevelSuccess}
 		},
 	)

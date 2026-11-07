@@ -26,6 +26,7 @@ type StandardLogger struct {
 	mode           LogMode
 	archiveDir     string
 	archiveID      string
+	retention      RetentionPolicy
 	archiveFile    *os.File
 	outFile        *os.File
 	outWriter      *colorprofile.Writer // color-profile-aware writer for styled output
@@ -77,6 +78,14 @@ func WithArchiveID(id string) LoggerOptions {
 	}
 }
 
+// WithArchiveRetention sets how many archived log files are kept. Without it, the logger keeps
+// DefaultRetentionPolicy.
+func WithArchiveRetention(policy RetentionPolicy) LoggerOptions {
+	return func(logger *StandardLogger) {
+		logger.retention = policy
+	}
+}
+
 func setupArchive(logger *StandardLogger) {
 	archiveFile := NewArchiveLogFile(logger.archiveDir, logger.archiveID)
 	archiveHandler := log.NewWithOptions(
@@ -106,15 +115,17 @@ func WithExitFunc(exit func(msg string, args ...any)) LoggerOptions {
 //   - WithOutput(file *os.File): Specifies the output file for the logger.
 //   - WithArchiveDirectory(path string): Enables log archiving to the specified directory.
 //     If the path is empty, archiving is disabled.
+//   - WithArchiveRetention(policy RetentionPolicy): Sets how many archived files are kept.
 //   - WithExitFunc(exit func()): Sets a custom function to be called on logger exit.
 //
 // By default, the logger uses a standard theme, text mode, and writes to os.Stdout.
 func NewLogger(opts ...LoggerOptions) *StandardLogger {
 	logger := &StandardLogger{
-		theme:    defaultTheme,
-		mode:     defaultMode,
-		outFile:  defaultOutput,
-		exitFunc: defaultExit,
+		theme:     defaultTheme,
+		mode:      defaultMode,
+		outFile:   defaultOutput,
+		exitFunc:  defaultExit,
+		retention: DefaultRetentionPolicy(),
 	}
 	for _, opt := range opts {
 		opt(logger)
@@ -126,7 +137,9 @@ func NewLogger(opts ...LoggerOptions) *StandardLogger {
 
 	if logger.archiveDir != "" {
 		setupArchive(logger)
-		RotateArchive(logger.archiveDir)
+		if err := PruneArchive(logger.archiveDir, logger.retention); err != nil {
+			fmt.Fprintf(os.Stderr, "tuikit/io: %v\n", err)
+		}
 	}
 
 	return logger

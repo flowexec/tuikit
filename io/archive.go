@@ -59,42 +59,93 @@ func NewArchiveLogFile(archiveDir, id string) *os.File {
 	return writer
 }
 
+// RetentionPolicy bounds how many archived log files are kept. Each limit applies on its own and
+// a zero (or negative) value means that dimension is unlimited. Files are pruned oldest first.
+type RetentionPolicy struct {
+	// MaxFiles is the maximum number of archive files to keep.
+	MaxFiles int
+	// MaxAge removes archive files last modified longer ago than this.
+	MaxAge time.Duration
+	// MaxTotalSize is the maximum combined size of the archive files, in bytes.
+	MaxTotalSize int64
+}
+
+// DefaultRetentionPolicy keeps the newest MaxArchiveSize files, with no age or size limit.
+func DefaultRetentionPolicy() RetentionPolicy {
+	return RetentionPolicy{MaxFiles: MaxArchiveSize}
+}
+
+// RotateArchive prunes archiveDir with the DefaultRetentionPolicy.
 func RotateArchive(archiveDir string) {
+	if err := PruneArchive(archiveDir, DefaultRetentionPolicy()); err != nil {
+		fmt.Fprintf(os.Stderr, "tuikit/io: %v\n", err)
+	}
+}
+
+type archiveFile struct {
+	path    string
+	modTime time.Time
+	size    int64
+}
+
+// PruneArchive removes files from archiveDir until it satisfies policy. Subdirectories are left
+// alone. Removal continues past individual failures; all of them are returned together.
+func PruneArchive(archiveDir string, policy RetentionPolicy) error {
 	if archiveDir == "" {
-		return
+		return nil
 	}
-	files, err := os.ReadDir(archiveDir)
+	dirEntries, err := os.ReadDir(archiveDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "tuikit/io: failed to read archive directory: %v\n", err)
-		return
+		return fmt.Errorf("failed to read archive directory: %w", err)
 	}
-	if len(files) <= MaxArchiveSize {
-		return
+
+	var errs []error
+	files := make([]archiveFile, 0, len(dirEntries))
+	for _, entry := range dirEntries {
+		if entry.IsDir() {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to get info for archive file: %w", err))
+			continue
+		}
+		files = append(files, archiveFile{
+			path:    filepath.Clean(filepath.Join(archiveDir, entry.Name())),
+			modTime: info.ModTime(),
+			size:    info.Size(),
+		})
 	}
-	slices.SortFunc(files, func(i, j os.DirEntry) int {
-		iInfo, err := i.Info()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "tuikit/io: failed to get info for archive file: %v\n", err)
-		}
-		jInfo, err := j.Info()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "tuikit/io: failed to get info for archive file: %v\n", err)
-		}
-		if iInfo.ModTime().Before(jInfo.ModTime()) {
-			return -1
-		} else if iInfo.ModTime().After(jInfo.ModTime()) {
-			return 1
-		}
-		return 0
+	slices.SortStableFunc(files, func(i, j archiveFile) int {
+		return i.modTime.Compare(j.modTime)
 	})
 
-	for i := 0; i < len(files)-MaxArchiveSize; i++ {
-		oldest := files[i]
-		err := os.Remove(filepath.Clean(filepath.Join(archiveDir, oldest.Name())))
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "tuikit/io: failed to remove oldest archive file: %v\n", err)
-		}
+	var totalSize int64
+	for _, f := range files {
+		totalSize += f.size
 	}
+	cutoff := time.Time{}
+	if policy.MaxAge > 0 {
+		cutoff = time.Now().Add(-policy.MaxAge)
+	}
+
+	remaining := len(files)
+	for _, f := range files {
+		overCount := policy.MaxFiles > 0 && remaining > policy.MaxFiles
+		overSize := policy.MaxTotalSize > 0 && totalSize > policy.MaxTotalSize
+		expired := !cutoff.IsZero() && f.modTime.Before(cutoff)
+		if !overCount && !overSize && !expired {
+			// Files are sorted oldest first, so nothing newer can be expired either.
+			break
+		}
+		if err := os.Remove(f.path); err != nil {
+			errs = append(errs, fmt.Errorf("failed to remove archive file: %w", err))
+			continue
+		}
+		remaining--
+		totalSize -= f.size
+	}
+	return errors.Join(errs...)
 }
 
 func ListArchiveEntries(archiveDir string) ([]ArchiveEntry, error) {

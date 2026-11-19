@@ -218,13 +218,13 @@ func (v *DetailContentView) HelpBindings() []themes.HelpKey {
 			keys = append(keys, themes.HelpKey{Key: cb.Key, Desc: cb.Label})
 		}
 	}
-	keys = append(keys, themes.HelpKey{Key: "↑/↓", Desc: "scroll"})
+	keys = append(keys, themes.HelpKey{Key: helpKeyArrows, Desc: helpScroll})
 	keys = append(keys, copyHelpKey(v.callbacks)...)
 	if v.opts.Entity != nil {
 		keys = append(keys,
 			themes.HelpKey{Key: "d", Desc: "detail"},
-			themes.HelpKey{Key: "y", Desc: "yaml"},
-			themes.HelpKey{Key: "j", Desc: "json"},
+			themes.HelpKey{Key: "y", Desc: helpYAML},
+			themes.HelpKey{Key: "j", Desc: helpJSON},
 		)
 	}
 	return keys

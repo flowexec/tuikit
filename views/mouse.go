@@ -21,6 +21,7 @@ import (
 
 // wheelDelta returns -1 for a wheel-up event, 1 for wheel-down, and 0 otherwise.
 func wheelDelta(msg tea.MouseWheelMsg) int {
+	//nolint:exhaustive
 	switch msg.Button {
 	case tea.MouseWheelUp:
 		return -1
@@ -71,6 +72,16 @@ func CopyToClipboard(text string) tea.Cmd {
 }
 
 // copyHelpKey returns the help binding for the copy key unless a callback overrides it.
+// Help descriptions shared by several views.
+const (
+	helpKeyArrows = "↑/↓"
+	helpScroll    = "scroll"
+	helpSelect    = "select"
+	helpFilter    = "filter"
+	helpYAML      = "yaml"
+	helpJSON      = "json"
+)
+
 func copyHelpKey(callbacks []types.KeyCallback) []themes.HelpKey {
 	if hasCallback(callbacks, types.KeyCopy) {
 		return nil

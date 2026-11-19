@@ -365,9 +365,9 @@ func (t *Table) renderFilterBar(width int) string {
 func (t *Table) HelpBindings() []themes.HelpKey {
 	bindings := []themes.HelpKey{
 		{Key: "↑/↓/j/k", Desc: "navigate"},
-		{Key: "enter", Desc: "select"},
+		{Key: types.KeyEnter, Desc: helpSelect},
 		{Key: "space/tab", Desc: "expand/collapse"},
-		{Key: "/", Desc: "filter"},
+		{Key: "/", Desc: helpFilter},
 	}
 	bindings = append(bindings, copyHelpKey(t.keyCallbacks)...)
 	for _, cb := range t.keyCallbacks {

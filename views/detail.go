@@ -122,7 +122,7 @@ func (v *DetailView) HelpBindings() []themes.HelpKey {
 		}
 	}
 	keys = append(keys,
-		themes.HelpKey{Key: "j/k", Desc: "scroll"},
+		themes.HelpKey{Key: "j/k", Desc: helpScroll},
 		themes.HelpKey{Key: "u/d", Desc: "half-page"},
 		themes.HelpKey{Key: "g/G", Desc: "top/bottom"},
 	)

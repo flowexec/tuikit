@@ -32,9 +32,9 @@ func NewEntityView(
 ) *EntityView {
 	//nolint:exhaustive
 	switch format {
-	case "yaml", "yml", "YAML", "YML":
+	case types.EntityFormatYAML, "yml", "YAML", "YML":
 		format = types.EntityFormatYAML
-	case "json", "JSON":
+	case types.EntityFormatJSON, "JSON":
 		format = types.EntityFormatJSON
 	case "doc", "md", "text", "markdown":
 		format = types.EntityFormatDocument
@@ -199,10 +199,10 @@ func (v *EntityView) HelpBindings() []themes.HelpKey {
 		}
 	}
 	keys = append(keys,
-		themes.HelpKey{Key: "↑/↓", Desc: "scroll"},
+		themes.HelpKey{Key: helpKeyArrows, Desc: helpScroll},
 		themes.HelpKey{Key: "d", Desc: "document"},
-		themes.HelpKey{Key: "y", Desc: "yaml"},
-		themes.HelpKey{Key: "j", Desc: "json"},
+		themes.HelpKey{Key: "y", Desc: helpYAML},
+		themes.HelpKey{Key: "j", Desc: helpJSON},
 	)
 	keys = append(keys, copyHelpKey(v.callbacks)...)
 	return keys

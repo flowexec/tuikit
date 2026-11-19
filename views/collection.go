@@ -40,9 +40,9 @@ func NewCollectionView(
 ) *CollectionView {
 	//nolint:exhaustive
 	switch format {
-	case "yaml", "yml", "YAML", "YML":
+	case types.CollectionFormatYAML, "yml", "YAML", "YML":
 		format = types.CollectionFormatYAML
-	case "json", "JSON":
+	case types.CollectionFormatJSON, "JSON":
 		format = types.CollectionFormatJSON
 	case "list", "ls", "browse":
 		format = types.CollectionFormatList
@@ -300,16 +300,16 @@ func (v *CollectionView) HelpBindings() []themes.HelpKey {
 		}
 	}
 	if v.selectedFunc != nil {
-		keys = append(keys, themes.HelpKey{Key: "enter", Desc: "select"})
+		keys = append(keys, themes.HelpKey{Key: types.KeyEnter, Desc: helpSelect})
 	}
 	keys = append(keys,
-		themes.HelpKey{Key: "/", Desc: "filter"},
+		themes.HelpKey{Key: "/", Desc: helpFilter},
 		themes.HelpKey{Key: "l", Desc: "list"},
-		themes.HelpKey{Key: "y", Desc: "yaml"},
-		themes.HelpKey{Key: "j", Desc: "json"},
+		themes.HelpKey{Key: "y", Desc: helpYAML},
+		themes.HelpKey{Key: "j", Desc: helpJSON},
 	)
 	if v.format != types.CollectionFormatList {
-		keys = append(keys, themes.HelpKey{Key: "↑/↓/pgup/pgdn", Desc: "scroll"})
+		keys = append(keys, themes.HelpKey{Key: "↑/↓/pgup/pgdn", Desc: helpScroll})
 	}
 	keys = append(keys, copyHelpKey(v.callbacks)...)
 	return keys

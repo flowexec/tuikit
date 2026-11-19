@@ -98,7 +98,7 @@ func (v *MarkdownView) View() tea.View {
 
 func (v *MarkdownView) HelpBindings() []themes.HelpKey {
 	return []themes.HelpKey{
-		{Key: "↑/↓", Desc: "scroll"},
+		{Key: helpKeyArrows, Desc: helpScroll},
 		{Key: types.KeyCopy, Desc: "copy"},
 	}
 }

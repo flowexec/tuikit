@@ -20,7 +20,7 @@ linters:
     - gocritic
     - gocyclo
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
     - gosec
     - govet
     - ineffassign
@@ -57,28 +57,27 @@ linters:
     exhaustive:
       check:
         - switch
-        - map
+        - mapliteral
     funlen:
       lines: 100
       statements: 50
       ignore-comments: true
     gocognit:
       min-complexity: 20
-    gomodguard:
+    gomodguard_v2:
       blocked:
-        modules:
-          - github.com/golang/protobuf:
-              recommendations:
-                - google.golang.org/protobuf
-              reason: see https://developers.google.com/protocol-buffers/docs/reference/go/faq#modules
-          - github.com/satori/go.uuid:
-              recommendations:
-                - github.com/google/uuid
-              reason: satori's package is not maintained
-          - github.com/gofrs/uuid:
-              recommendations:
-                - github.com/google/uuid
-              reason: gofrs' package is not go module
+        - module: github.com/golang/protobuf
+          recommendations:
+            - google.golang.org/protobuf
+          reason: see https://developers.google.com/protocol-buffers/docs/reference/go/faq#modules
+        - module: github.com/satori/go.uuid
+          recommendations:
+            - github.com/google/uuid
+          reason: satori's package is not maintained
+        - module: github.com/gofrs/uuid
+          recommendations:
+            - github.com/google/uuid
+          reason: gofrs' package is not go module
     govet:
       disable:
         - fieldalignment
@@ -112,6 +111,9 @@ linters:
           - noctx
           - wrapcheck
         path: _test\.go
+      - linters:
+          - goconst
+        path: ^sample/
       - linters:
           - staticcheck
         text: SA5011

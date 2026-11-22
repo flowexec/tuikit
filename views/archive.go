@@ -227,8 +227,8 @@ func (v *LogArchiveView) HelpBindings() []themes.HelpKey {
 		return nil
 	}
 	return []themes.HelpKey{
-		{Key: "enter", Desc: "select"},
-		{Key: "/", Desc: "filter"},
+		{Key: types.KeyEnter, Desc: helpSelect},
+		{Key: "/", Desc: helpFilter},
 		{Key: "d", Desc: "delete selected"},
 		{Key: "x", Desc: "delete all"},
 		{Key: types.KeyCopy, Desc: "copy path"},

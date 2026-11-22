@@ -9,8 +9,10 @@ import (
 	"sync"
 	"time"
 
+	"bloomfx.dev/bloom"
+	"bloomfx.dev/bloom/anim"
+	"bloomfx.dev/bloom/fx"
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 
 	"github.com/flowexec/tuikit/overlay"
 	"github.com/flowexec/tuikit/themes"
@@ -54,13 +56,22 @@ type Container struct {
 	finalizing            *chan struct{}
 	mouseEnabled          bool
 
+	ui        *bloom.Root
+	helpAnim  anim.Presence
+	toastAnim anim.Presence
+	// lastToasts keeps the final toast stack drawn while it animates out.
+	lastToasts string
+
 	viewMu  sync.RWMutex
 	stateMu sync.RWMutex
 }
 
 type ContainerOptions func(*Container)
 
-var tickTime = time.Millisecond * 250
+var (
+	tickTime        = time.Millisecond * 250
+	overlayDuration = time.Millisecond * 180
+)
 
 func NewContainer(
 	ctx context.Context,
@@ -99,6 +110,9 @@ func NewContainer(
 	}
 	c.help = overlay.NewHelpPopup(c.render.Theme)
 	c.toasts = overlay.NewToastManager(c.render.Theme)
+	c.ui = bloom.New()
+	c.helpAnim = anim.NewPresence(anim.Duration(overlayDuration))
+	c.toastAnim = anim.NewPresence(anim.Duration(overlayDuration))
 
 	return c, nil
 }
@@ -159,15 +173,38 @@ func (c *Container) Init() tea.Cmd {
 	cmds = append(
 		cmds,
 		c.doTick(),
+		c.ui.Init(),
 		cmd,
 	)
 	return tea.Batch(cmds...)
 }
 
 func (c *Container) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	model, cmd := c.update(msg)
+	return model, tea.Batch(cmd, c.ui.Update(msg), anim.Update(msg, &c.helpAnim, &c.toastAnim), c.syncOverlays())
+}
+
+// syncOverlays starts the show or hide animation of any overlay whose state changed.
+func (c *Container) syncOverlays() tea.Cmd {
+	var cmds []tea.Cmd
+	if c.help.Visible() != c.helpAnim.Shown() {
+		cmds = append(cmds, c.helpAnim.Toggle())
+	}
+	if !c.toasts.Empty() {
+		c.lastToasts = c.toasts.Render(c.render.Width, c.render.Height)
+	}
+	if c.toasts.Empty() == c.toastAnim.Shown() {
+		cmds = append(cmds, c.toastAnim.Toggle())
+	}
+	return tea.Batch(cmds...)
+}
+
+func (c *Container) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	fwdMsg := msg
 	cmds := make([]tea.Cmd, 0)
 	switch msg := msg.(type) {
+	case anim.FrameMsg:
+		fwdMsg = nil
 	case tea.QuitMsg:
 		return c, tea.Quit
 	case tea.WindowSizeMsg:
@@ -313,40 +350,32 @@ func (c *Container) View() tea.View {
 	}
 
 	header := c.render.Theme.RenderHeader(c.app.Name, c.app.Version, c.app.stateKey, c.app.stateVal, c.render.Width)
-	base := lipgloss.JoinVertical(lipgloss.Top, header, c.CurrentView().View().Content)
+	base := bloom.Column(
+		bloom.Fixed(themes.HeaderHeight, bloom.Text(header)),
+		bloom.Fill(bloom.Text(c.CurrentView().View().Content)),
+	)
 
-	// Fast path: no overlays active.
-	if !c.help.Visible() && c.toasts.Empty() {
-		v := tea.NewView(base)
-		v.WindowTitle = c.app.Name
-		return c.withMouseMode(v)
+	layers := make([]bloom.LayerNode, 0, 2)
+	if c.toastAnim.Visible() {
+		toasts := c.lastToasts
+		if !c.toasts.Empty() {
+			toasts = c.toasts.Render(c.render.Width, c.render.Height)
+		}
+		layers = append(layers, bloom.Layer(bloom.Text(toasts)).
+			Anchor(bloom.End, bloom.End).
+			Margin(1).
+			Presence(c.toastAnim, fx.Fade{}, fx.Slide{From: fx.Right}))
+	}
+	if c.helpAnim.Visible() {
+		layers = append(layers, bloom.Layer(bloom.Text(c.help.Render(c.render.Width, c.render.Height))).
+			Anchor(bloom.Center, bloom.Center).
+			Backdrop(fx.Dim{Amount: 0.4}).
+			Presence(c.helpAnim, fx.Fade{}, fx.Slide{From: fx.Bottom}))
 	}
 
-	// Overlay path: compose layers.
-	baseLayer := lipgloss.NewLayer(base)
-
-	if c.help.Visible() {
-		helpStr := c.help.Render(c.render.Width, c.render.Height)
-		helpW, helpH := lipgloss.Width(helpStr), lipgloss.Height(helpStr)
-		helpX := (c.render.Width - helpW) / 2
-		helpY := (c.render.Height - helpH) / 2
-		helpLayer := lipgloss.NewLayer(helpStr).X(helpX).Y(helpY).Z(10)
-		baseLayer.AddLayers(helpLayer)
-	}
-
-	if !c.toasts.Empty() {
-		toastStr := c.toasts.Render(c.render.Width, c.render.Height)
-		toastW := lipgloss.Width(toastStr)
-		toastH := lipgloss.Height(toastStr)
-		toastX := c.render.Width - toastW - 1
-		toastY := c.render.Height - toastH - 1
-		toastLayer := lipgloss.NewLayer(toastStr).X(toastX).Y(toastY).Z(5)
-		baseLayer.AddLayers(toastLayer)
-	}
-
-	comp := lipgloss.NewCompositor(baseLayer)
-	v := tea.NewView(comp.Render())
+	v := c.ui.View(c.render.Width, c.render.Height, bloom.Overlay(base, layers...))
 	v.WindowTitle = c.app.Name
+	v.AltScreen = true
 	return c.withMouseMode(v)
 }
 

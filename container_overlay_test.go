@@ -33,6 +33,9 @@ func TestContainerOverlays(t *testing.T) {
 	}
 
 	content := func() string { return container.View().Content }
+	if !container.View().AltScreen {
+		t.Error("expected the container to draw on the alternate screen")
+	}
 	if c := content(); !strings.Contains(c, "body text") || !strings.Contains(c, "tuikit-test") {
 		t.Fatalf("expected header and body, got:\n%s", c)
 	}

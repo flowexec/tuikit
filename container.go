@@ -375,6 +375,7 @@ func (c *Container) View() tea.View {
 
 	v := c.ui.View(c.render.Width, c.render.Height, bloom.Overlay(base, layers...))
 	v.WindowTitle = c.app.Name
+	v.AltScreen = true
 	return c.withMouseMode(v)
 }
 
